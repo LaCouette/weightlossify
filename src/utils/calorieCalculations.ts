@@ -23,41 +23,49 @@ export function calculateNEAT(steps: number): number {
   return Math.round(steps * CALORIES_PER_STEP);
 }
 
-export function calculateDailyDeficit(weeklyWeightGoal: number): number {
-  return Math.round((weeklyWeightGoal * CALORIES_PER_KG) / 7);
+export function calculateDailySurplusOrDeficit(weeklyWeightGoal: number, isGain: boolean): number {
+  // For muscle gain, we use monthly goals, so convert weekly values
+  const weeklyChange = isGain ? (weeklyWeightGoal / 4) : weeklyWeightGoal;
+  const dailyChange = Math.round((weeklyChange * CALORIES_PER_KG) / 7);
+  return isGain ? dailyChange : -dailyChange; // Positive for surplus, negative for deficit
 }
 
 export function calculateRequiredSteps(
   targetCalories: number,
   baseMaintenance: number,
-  targetDeficit: number
+  targetChange: number
 ): number {
-  const requiredNEAT = targetCalories + targetDeficit - baseMaintenance;
+  const requiredNEAT = targetCalories - targetChange - baseMaintenance;
   return Math.round(requiredNEAT / CALORIES_PER_STEP);
 }
 
 export function calculateTargetCalories(
   totalMaintenance: number,
-  targetDeficit: number
+  targetChange: number
 ): number {
-  return Math.round(totalMaintenance - targetDeficit);
+  return Math.round(totalMaintenance + targetChange);
 }
 
 export function getInitialRecommendation(
   baseMaintenance: number,
-  targetDeficit: number
+  targetChange: number,
+  isGain: boolean
 ) {
-  // Split the deficit between diet and activity
-  const dietaryDeficit = Math.round(targetDeficit * 0.7); // 70% from diet
-  const activityDeficit = targetDeficit - dietaryDeficit; // 30% from activity
+  // For muscle gain, we want more calories and moderate activity
+  // For weight loss, we want a balanced approach between diet and activity
+  const activityRatio = isGain ? 0.2 : 0.3; // 20% from activity for gains, 30% for loss
+  const dietaryChange = Math.round(targetChange * (1 - activityRatio));
+  const activityChange = targetChange - dietaryChange;
 
-  // Calculate initial steps needed for activity deficit
-  const requiredSteps = Math.round(activityDeficit / CALORIES_PER_STEP);
+  // Calculate initial steps
+  const baseSteps = isGain ? 7500 : 10000; // Lower base steps for muscle gain
+  const additionalSteps = Math.round(Math.abs(activityChange) / CALORIES_PER_STEP);
+  const requiredSteps = baseSteps + (isGain ? -additionalSteps : additionalSteps);
 
   // Calculate initial calorie target
   const neat = calculateNEAT(requiredSteps);
   const totalMaintenance = baseMaintenance + neat;
-  const targetCalories = calculateTargetCalories(totalMaintenance, targetDeficit);
+  const targetCalories = calculateTargetCalories(totalMaintenance, targetChange);
 
   return {
     calories: targetCalories,

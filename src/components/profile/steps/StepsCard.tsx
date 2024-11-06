@@ -7,6 +7,7 @@ interface StepsCardProps {
   minSteps: number;
   maxSteps: number;
   onChange: (steps: number) => void;
+  isGain: boolean;
 }
 
 export function StepsCard({
@@ -14,7 +15,8 @@ export function StepsCard({
   calories,
   minSteps,
   maxSteps,
-  onChange
+  onChange,
+  isGain
 }: StepsCardProps) {
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -56,7 +58,9 @@ export function StepsCard({
       </div>
 
       <div className="mt-4 text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
-        <strong>Note:</strong> Your daily step goal helps create a calorie deficit through activity. This is combined with your dietary changes to reach your target deficit.
+        <strong>Note:</strong> {isGain 
+          ? "For muscle gain, we recommend moderate activity to support recovery while maintaining general fitness."
+          : "Your daily step goal helps create a calorie deficit through activity. This is combined with your dietary changes to reach your target deficit."}
       </div>
     </div>
   );

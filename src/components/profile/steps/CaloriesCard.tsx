@@ -3,18 +3,20 @@ import { Scale } from 'lucide-react';
 
 interface CaloriesCardProps {
   calories: number;
-  deficit: number;
+  change: number;
   minCalories: number;
   maxCalories: number;
   onChange: (calories: number) => void;
+  isGain: boolean;
 }
 
 export function CaloriesCard({
   calories,
-  deficit,
+  change,
   minCalories,
   maxCalories,
-  onChange
+  onChange,
+  isGain
 }: CaloriesCardProps) {
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -34,9 +36,9 @@ export function CaloriesCard({
         </div>
         <div className="text-right">
           <div className="text-sm font-medium text-gray-900 mb-1">
-            {Math.round(deficit)} cal
+            {Math.abs(Math.round(change))} cal
           </div>
-          <div className="text-sm text-gray-500">deficit</div>
+          <div className="text-sm text-gray-500">{isGain ? 'surplus' : 'deficit'}</div>
         </div>
       </div>
 
@@ -56,7 +58,9 @@ export function CaloriesCard({
       </div>
 
       <div className="mt-4 text-sm text-gray-600 bg-orange-50 p-3 rounded-lg">
-        <strong>Note:</strong> This is your target daily calorie intake to achieve your weight loss goal while maintaining a healthy and sustainable deficit.
+        <strong>Note:</strong> {isGain 
+          ? "This is your target daily calorie intake to support muscle growth while minimizing fat gain. Combine with strength training for optimal results."
+          : "This is your target daily calorie intake to achieve your weight loss goal while maintaining a healthy and sustainable deficit."}
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import {
   calculateBMR,
   calculateBaseMaintenance,
   calculateNEAT,
-  calculateDailyDeficit,
+  calculateDailySurplusOrDeficit,
   calculateRequiredSteps,
   calculateTargetCalories,
   getInitialRecommendation,
@@ -22,6 +22,8 @@ interface Step5Props {
 }
 
 export function Step5({ formData, onChange }: Step5Props) {
+  const isGain = formData.primaryGoal === 'muscle_gain';
+  
   const bmr = calculateBMR(
     Number(formData.currentWeight),
     Number(formData.height),
@@ -30,12 +32,12 @@ export function Step5({ formData, onChange }: Step5Props) {
   );
   
   const baseMaintenance = calculateBaseMaintenance(bmr);
-  const targetDeficit = calculateDailyDeficit(Number(formData.weeklyWeightGoal));
-  const maxCalories = Math.round(baseMaintenance * 1.5);
-  const minCalories = Math.round(baseMaintenance * 0.5);
+  const targetChange = calculateDailySurplusOrDeficit(Number(formData.weeklyWeightGoal), isGain);
+  const maxCalories = Math.round(baseMaintenance * (isGain ? 1.7 : 1.5));
+  const minCalories = Math.round(baseMaintenance * (isGain ? 1.1 : 0.5));
 
   // Get initial balanced recommendation
-  const initialReco = getInitialRecommendation(baseMaintenance, targetDeficit);
+  const initialReco = getInitialRecommendation(baseMaintenance, targetChange, isGain);
 
   const [values, setValues] = useState({
     targetCalories: initialReco.calories,
@@ -44,21 +46,21 @@ export function Step5({ formData, onChange }: Step5Props) {
 
   const neat = calculateNEAT(values.targetSteps);
   const totalMaintenance = baseMaintenance + neat;
-  const currentDeficit = totalMaintenance - values.targetCalories;
+  const currentChange = values.targetCalories - totalMaintenance;
 
   const handleCaloriesChange = (newCalories: number) => {
     // Calculate required steps for the new calorie target
     const requiredSteps = calculateRequiredSteps(
       newCalories,
       baseMaintenance,
-      targetDeficit
+      targetChange
     );
 
     // If required steps would exceed MAX_STEPS, calculate the maximum possible calories
     if (requiredSteps > MAX_STEPS) {
       const maxNeat = calculateNEAT(MAX_STEPS);
       const maxTotalMaintenance = baseMaintenance + maxNeat;
-      const maxPossibleCalories = calculateTargetCalories(maxTotalMaintenance, targetDeficit);
+      const maxPossibleCalories = calculateTargetCalories(maxTotalMaintenance, targetChange);
       
       setValues({
         targetCalories: maxPossibleCalories,
@@ -69,7 +71,7 @@ export function Step5({ formData, onChange }: Step5Props) {
 
     // If required steps would go below 0, calculate the minimum possible calories
     if (requiredSteps < 0) {
-      const minPossibleCalories = baseMaintenance - targetDeficit;
+      const minPossibleCalories = baseMaintenance + targetChange;
       
       setValues({
         targetCalories: minPossibleCalories,
@@ -87,11 +89,11 @@ export function Step5({ formData, onChange }: Step5Props) {
   const handleStepsChange = (newSteps: number) => {
     const newNeat = calculateNEAT(newSteps);
     const newTotalMaintenance = baseMaintenance + newNeat;
-    const newCalories = calculateTargetCalories(newTotalMaintenance, targetDeficit);
+    const newCalories = calculateTargetCalories(newTotalMaintenance, targetChange);
 
     // If new calories would exceed maxCalories, calculate the maximum possible steps
     if (newCalories > maxCalories) {
-      const maxPossibleSteps = Math.round((maxCalories + targetDeficit - baseMaintenance) / CALORIES_PER_STEP);
+      const maxPossibleSteps = Math.round((maxCalories - targetChange - baseMaintenance) / CALORIES_PER_STEP);
       
       setValues({
         targetCalories: maxCalories,
@@ -102,7 +104,7 @@ export function Step5({ formData, onChange }: Step5Props) {
 
     // If new calories would go below minCalories, calculate the minimum possible steps
     if (newCalories < minCalories) {
-      const minPossibleSteps = Math.round((minCalories + targetDeficit - baseMaintenance) / CALORIES_PER_STEP);
+      const minPossibleSteps = Math.round((minCalories - targetChange - baseMaintenance) / CALORIES_PER_STEP);
       
       setValues({
         targetCalories: minCalories,
@@ -152,11 +154,11 @@ export function Step5({ formData, onChange }: Step5Props) {
         <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full">
           <Target className="h-5 w-5 text-purple-600 mr-2" />
           <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 text-transparent bg-clip-text">
-            Target Deficit: {targetDeficit} calories/day
+            Target {isGain ? 'Surplus' : 'Deficit'}: {Math.abs(targetChange)} calories/day
           </span>
         </div>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Based on your goals and current stats, we've calculated your optimal calorie and activity targets.
+          Based on your goal to {isGain ? 'gain muscle' : 'lose weight'}, we've calculated your optimal calorie and activity targets.
           Adjust the sliders below to find the perfect balance for you.
         </p>
       </div>
@@ -166,8 +168,9 @@ export function Step5({ formData, onChange }: Step5Props) {
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start space-x-3">
           <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-blue-700">
-            Your plan includes both diet and activity adjustments. The calculator automatically balances your calorie intake
-            with your activity level to help you reach your goal while maintaining a healthy lifestyle.
+            {isGain 
+              ? "For muscle gain, we recommend a moderate caloric surplus combined with strength training. The activity level is kept lower to prioritize recovery and muscle growth."
+              : "Your plan includes both diet and activity adjustments. The calculator automatically balances your calorie intake with your activity level to help you reach your weight loss goal."}
           </p>
         </div>
 
@@ -180,10 +183,11 @@ export function Step5({ formData, onChange }: Step5Props) {
           />
           <CaloriesCard
             calories={values.targetCalories}
-            deficit={currentDeficit}
+            change={currentChange}
             minCalories={minPossibleCalories}
             maxCalories={maxPossibleCalories}
             onChange={handleCaloriesChange}
+            isGain={isGain}
           />
         </div>
 
@@ -193,6 +197,7 @@ export function Step5({ formData, onChange }: Step5Props) {
           minSteps={minPossibleSteps}
           maxSteps={maxPossibleSteps}
           onChange={handleStepsChange}
+          isGain={isGain}
         />
 
         {/* Results Section */}
@@ -204,7 +209,7 @@ export function Step5({ formData, onChange }: Step5Props) {
             </div>
             <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-purple-100">
               <span className="font-medium text-lg text-purple-600">
-                {currentDeficit} cal deficit
+                {Math.abs(currentChange)} cal {isGain ? 'surplus' : 'deficit'}
               </span>
             </div>
           </div>
@@ -230,7 +235,7 @@ export function Step5({ formData, onChange }: Step5Props) {
           </div>
 
           <div className="mt-6 text-sm text-gray-600 text-center">
-            Following these targets should result in approximately {(currentDeficit * 7 / 7700).toFixed(2)}kg of weight loss per week
+            Following these targets should result in approximately {(Math.abs(currentChange) * 7 / 7700).toFixed(2)}kg of {isGain ? 'weight gain' : 'weight loss'} per week
           </div>
         </div>
       </div>
