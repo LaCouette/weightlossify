@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAGLAjvWLynvDPxTlpNdfe3ozXzOw-NzD4",
@@ -24,7 +25,7 @@ export const storage = getStorage(app);
 // Only initialize analytics in production and in browser environment
 let analytics = null;
 if (typeof window !== 'undefined' && import.meta.env.PROD) {
-  const { getAnalytics } = await import('firebase/analytics');
   analytics = getAnalytics(app);
 }
+
 export { analytics };

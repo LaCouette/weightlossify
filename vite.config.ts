@@ -7,4 +7,12 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  build: {
+    target: 'esnext',  // Add this to support modern JavaScript features including top-level await
+  },
+  esbuild: {
+    supported: {
+      'top-level-await': true  // Enable top-level await support
+    },
+  }
 });
