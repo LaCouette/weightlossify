@@ -6,7 +6,7 @@ import { AuthPage } from './components/auth/AuthPage';
 import { ProfileSetup } from './components/profile/ProfileSetup';
 import { Profile } from './components/profile/Profile';
 import { PrivateRoute } from './components/auth/PrivateRoute';
-
+// BLABLALA
 export function App() {
   return (
     <Router>
