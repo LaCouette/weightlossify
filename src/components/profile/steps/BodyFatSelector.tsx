@@ -33,74 +33,99 @@ const femaleBodyFatRanges = [
 export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSelectorProps) {
   const ranges = gender === 'female' ? femaleBodyFatRanges : maleBodyFatRanges;
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [startX, setStartX] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastDragTime = useRef(Date.now());
+  const animationFrameRef = useRef<number>();
 
-  // Minimum swipe distance (in px)
-  const minSwipeDistance = 50;
+  const swipeThreshold = isTouchDevice ? 50 : 35;
+
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
 
   const handleSelect = (index: number) => {
-    if (!isDragging) {
+    if (!isDragging && index >= 0 && index < ranges.length) {
       setCurrentIndex(index);
       onChange(ranges[index].avg);
     }
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
+  const updateDragPosition = (clientX: number) => {
+    if (!isDragging) return;
+
+    const now = Date.now();
+    const timeDelta = now - lastDragTime.current;
+    lastDragTime.current = now;
+
+    const newOffset = clientX - startX;
+    const momentum = Math.min(Math.abs(newOffset - dragOffset) / timeDelta * 16, 2);
+    const smoothedOffset = dragOffset + (newOffset - dragOffset) * (isTouchDevice ? 0.5 : 0.3) * momentum;
+
+    setDragOffset(smoothedOffset);
+
+    if (Math.abs(smoothedOffset) > swipeThreshold) {
+      const direction = smoothedOffset > 0 ? -1 : 1;
+      const nextIndex = currentIndex + direction;
+
+      if (nextIndex >= 0 && nextIndex < ranges.length) {
+        setCurrentIndex(nextIndex);
+        onChange(ranges[nextIndex].avg);
+        setStartX(clientX);
+        setDragOffset(0);
+      }
+    }
+
+    if (isDragging) {
+      animationFrameRef.current = requestAnimationFrame(() => {
+        updateDragPosition(clientX);
+      });
+    }
+  };
+
+  const handleDragStart = (clientX: number) => {
     setIsDragging(true);
+    setStartX(clientX);
+    lastDragTime.current = Date.now();
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setDragOffset(0);
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    handleDragStart(e.touches[0].clientX);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-    // Prevent page scrolling during swipe
+    if (!isDragging) return;
+    updateDragPosition(e.touches[0].clientX);
     e.preventDefault();
   };
 
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe && currentIndex < ranges.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      onChange(ranges[currentIndex + 1].avg);
-    }
-
-    if (isRightSwipe && currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
-      onChange(ranges[currentIndex - 1].avg);
-    }
-
-    setTouchStart(null);
-    setTouchEnd(null);
-    setIsDragging(false);
-  };
-
-  // Mouse drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
-    setTouchStart(e.clientX);
-    setIsDragging(true);
+    if (isTouchDevice) return;
+    handleDragStart(e.clientX);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setTouchEnd(e.clientX);
-  };
-
-  const handleMouseUp = () => {
-    if (!isDragging) return;
-    handleTouchEnd();
-  };
-
-  const handleMouseLeave = () => {
-    if (isDragging) {
-      handleTouchEnd();
-    }
+    if (!isDragging || isTouchDevice) return;
+    updateDragPosition(e.clientX);
   };
 
   return (
@@ -112,7 +137,7 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
         <div>
           <label className="block font-bold text-gray-900">Estimate Your Body Fat</label>
           <p className="text-sm text-gray-600 mt-1">
-            Swipe or click images to select your match
+            {isTouchDevice ? 'Swipe' : 'Click and drag'} or click images to select your match
           </p>
         </div>
       </div>
@@ -122,11 +147,11 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
         className="relative h-[350px] sm:h-[400px] w-full max-w-full overflow-hidden select-none touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        onTouchEnd={handleDragEnd}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
       >
         <div className="absolute inset-0 flex items-center justify-center">
           {ranges.map((item, index) => {
@@ -134,14 +159,8 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
             const absOffset = Math.abs(offset);
             const isActive = index === currentIndex;
             
-            // Calculate touch/drag influence
-            const dragDistance = touchEnd && touchStart ? touchEnd - touchStart : 0;
-            const dragInfluence = isDragging ? dragDistance * 0.5 : 0;
-            
-            // Only render images that are visible (current and adjacent)
             if (absOffset > 2) return null;
 
-            // Calculate transform values
             let translateX = 0;
             let translateZ = 0;
             let rotateY = 0;
@@ -149,19 +168,19 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
             let scale = 1;
 
             if (offset < 0) {
-              translateX = -120 - (absOffset - 1) * 60 + dragInfluence;
+              translateX = -120 - (absOffset - 1) * 60 + dragOffset;
               translateZ = -100 * absOffset;
               rotateY = 45;
               opacity = 1 - absOffset * 0.4;
               scale = 1 - absOffset * 0.2;
             } else if (offset > 0) {
-              translateX = 120 + (absOffset - 1) * 60 + dragInfluence;
+              translateX = 120 + (absOffset - 1) * 60 + dragOffset;
               translateZ = -100 * absOffset;
               rotateY = -45;
               opacity = 1 - absOffset * 0.4;
               scale = 1 - absOffset * 0.2;
             } else {
-              translateX = dragInfluence;
+              translateX = dragOffset;
               translateZ = 0;
               scale = 1;
             }
@@ -170,7 +189,7 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
               <div
                 key={item.range}
                 onClick={() => handleSelect(index)}
-                className="absolute transition-all duration-300 ease-out"
+                className="absolute transition-transform duration-300 ease-out will-change-transform"
                 style={{
                   transform: `
                     translateX(${translateX}px)
