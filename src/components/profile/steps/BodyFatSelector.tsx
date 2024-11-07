@@ -33,99 +33,78 @@ const femaleBodyFatRanges = [
 export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSelectorProps) {
   const ranges = gender === 'female' ? femaleBodyFatRanges : maleBodyFatRanges;
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [dragOffset, setDragOffset] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [startX, setStartX] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const lastDragTime = useRef(Date.now());
-  const animationFrameRef = useRef<number>();
 
-  const swipeThreshold = isTouchDevice ? 50 : 35;
+  // Different swipe thresholds for touch and mouse
+  const minSwipeDistance = isTouchDevice ? 50 : 25;
 
   useEffect(() => {
     setIsTouchDevice('ontouchstart' in window);
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
   }, []);
 
   const handleSelect = (index: number) => {
-    if (!isDragging && index >= 0 && index < ranges.length) {
+    if (!isDragging) {
       setCurrentIndex(index);
       onChange(ranges[index].avg);
     }
   };
 
-  const updateDragPosition = (clientX: number) => {
-    if (!isDragging) return;
-
-    const now = Date.now();
-    const timeDelta = now - lastDragTime.current;
-    lastDragTime.current = now;
-
-    const newOffset = clientX - startX;
-    const momentum = Math.min(Math.abs(newOffset - dragOffset) / timeDelta * 16, 2);
-    const smoothedOffset = dragOffset + (newOffset - dragOffset) * (isTouchDevice ? 0.5 : 0.3) * momentum;
-
-    setDragOffset(smoothedOffset);
-
-    if (Math.abs(smoothedOffset) > swipeThreshold) {
-      const direction = smoothedOffset > 0 ? -1 : 1;
-      const nextIndex = currentIndex + direction;
-
-      if (nextIndex >= 0 && nextIndex < ranges.length) {
-        setCurrentIndex(nextIndex);
-        onChange(ranges[nextIndex].avg);
-        setStartX(clientX);
-        setDragOffset(0);
-      }
-    }
-
-    if (isDragging) {
-      animationFrameRef.current = requestAnimationFrame(() => {
-        updateDragPosition(clientX);
-      });
-    }
-  };
-
-  const handleDragStart = (clientX: number) => {
-    setIsDragging(true);
-    setStartX(clientX);
-    lastDragTime.current = Date.now();
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    setDragOffset(0);
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-  };
-
   const handleTouchStart = (e: React.TouchEvent) => {
-    handleDragStart(e.touches[0].clientX);
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsDragging(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    updateDragPosition(e.touches[0].clientX);
+    setTouchEnd(e.targetTouches[0].clientX);
     e.preventDefault();
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentIndex < ranges.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+      onChange(ranges[currentIndex + 1].avg);
+    }
+
+    if (isRightSwipe && currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+      onChange(ranges[currentIndex - 1].avg);
+    }
+
+    setTouchStart(null);
+    setTouchEnd(null);
+    setIsDragging(false);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isTouchDevice) return;
-    handleDragStart(e.clientX);
+    setTouchStart(e.clientX);
+    setIsDragging(true);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || isTouchDevice) return;
-    updateDragPosition(e.clientX);
+    setTouchEnd(e.clientX);
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging || isTouchDevice) return;
+    handleTouchEnd();
+  };
+
+  const handleMouseLeave = () => {
+    if (isDragging && !isTouchDevice) {
+      handleTouchEnd();
+    }
   };
 
   return (
@@ -147,17 +126,20 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
         className="relative h-[350px] sm:h-[400px] w-full max-w-full overflow-hidden select-none touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
-        onTouchEnd={handleDragEnd}
+        onTouchEnd={handleTouchEnd}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleDragEnd}
-        onMouseLeave={handleDragEnd}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
       >
         <div className="absolute inset-0 flex items-center justify-center">
           {ranges.map((item, index) => {
             const offset = index - currentIndex;
             const absOffset = Math.abs(offset);
             const isActive = index === currentIndex;
+            
+            const dragDistance = touchEnd && touchStart ? touchEnd - touchStart : 0;
+            const dragInfluence = isDragging ? dragDistance * (isTouchDevice ? 0.5 : 0.8) : 0;
             
             if (absOffset > 2) return null;
 
@@ -168,19 +150,19 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
             let scale = 1;
 
             if (offset < 0) {
-              translateX = -120 - (absOffset - 1) * 60 + dragOffset;
+              translateX = -120 - (absOffset - 1) * 60 + dragInfluence;
               translateZ = -100 * absOffset;
               rotateY = 45;
               opacity = 1 - absOffset * 0.4;
               scale = 1 - absOffset * 0.2;
             } else if (offset > 0) {
-              translateX = 120 + (absOffset - 1) * 60 + dragOffset;
+              translateX = 120 + (absOffset - 1) * 60 + dragInfluence;
               translateZ = -100 * absOffset;
               rotateY = -45;
               opacity = 1 - absOffset * 0.4;
               scale = 1 - absOffset * 0.2;
             } else {
-              translateX = dragOffset;
+              translateX = dragInfluence;
               translateZ = 0;
               scale = 1;
             }
@@ -189,7 +171,7 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
               <div
                 key={item.range}
                 onClick={() => handleSelect(index)}
-                className="absolute transition-transform duration-300 ease-out will-change-transform"
+                className="absolute transition-all duration-300 ease-out"
                 style={{
                   transform: `
                     translateX(${translateX}px)
