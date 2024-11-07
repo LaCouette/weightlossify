@@ -21,22 +21,25 @@ const maleBodyFatRanges = [
 
 const femaleBodyFatRanges = [
   { range: '12%', avg: 12, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/main/woman/12.jpg?raw=true' },
-  { range: '15%', avg: 15, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/main/woman/15.jpg?raw=true' },
-  { range: '20%', avg: 20, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/main/woman/20.jpg?raw=true' },
-  { range: '25%', avg: 25, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/main/woman/25.jpg?raw=true' },
-  { range: '30%', avg: 30, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/main/woman/30.jpg?raw=true' },
-  { range: '35%', avg: 35, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/main/woman/35.jpg?raw=true' },
-  { range: '40%', avg: 40, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/main/woman/40.jpg?raw=true' },
-  { range: '45%', avg: 45, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/main/woman/45.jpg?raw=true' }
+  { range: '15%', avg: 15, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/refs/heads/main/woman/15.jpg' },
+  { range: '20%', avg: 20, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/refs/heads/main/woman/20.jpg' },
+  { range: '25%', avg: 25, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/refs/heads/main/woman/25.jpg' },
+  { range: '30%', avg: 30, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/refs/heads/main/woman/30.jpg' },
+  { range: '35%', avg: 35, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/refs/heads/main/woman/35.jpg' },
+  { range: '40%', avg: 40, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/refs/heads/main/woman/40.jpg' },
+  { range: '45%', avg: 45, image: 'https://raw.githubusercontent.com/LaCouette/bodyfat-pictures/refs/heads/main/woman/45.jpg' }
 ];
 
 export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSelectorProps) {
   const ranges = gender === 'female' ? femaleBodyFatRanges : maleBodyFatRanges;
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [dragOffset, setDragOffset] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
 
   const handleSelect = (index: number) => {
     if (!isDragging) {
@@ -45,71 +48,60 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
     }
   };
 
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
     setIsDragging(true);
-    setStartX(
-      'touches' in e 
-        ? e.touches[0].clientX 
-        : (e as React.MouseEvent).clientX
-    );
   };
 
-  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging) return;
-    
-    const currentX = 'touches' in e 
-      ? e.touches[0].clientX 
-      : (e as React.MouseEvent).clientX;
-    const diff = currentX - startX;
-    setDragOffset(diff);
-
-    // Prevent page scrolling during drag
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+    // Prevent page scrolling during swipe
     e.preventDefault();
   };
 
-  const handleDragEnd = () => {
-    if (!isDragging) return;
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
 
-    const threshold = 50; // Swipe threshold to change image
-    
-    if (dragOffset > threshold && currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
-      onChange(ranges[currentIndex - 1].avg);
-    } else if (dragOffset < -threshold && currentIndex < ranges.length - 1) {
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentIndex < ranges.length - 1) {
       setCurrentIndex(prev => prev + 1);
       onChange(ranges[currentIndex + 1].avg);
     }
 
+    if (isRightSwipe && currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+      onChange(ranges[currentIndex - 1].avg);
+    }
+
+    setTouchStart(null);
+    setTouchEnd(null);
     setIsDragging(false);
-    setDragOffset(0);
   };
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+  // Mouse drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setTouchStart(e.clientX);
+    setIsDragging(true);
+  };
 
-    const handleTouchStart = (e: TouchEvent) => {
-      handleDragStart(e as unknown as React.TouchEvent);
-    };
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setTouchEnd(e.clientX);
+  };
 
-    const handleTouchMove = (e: TouchEvent) => {
-      handleDragMove(e as unknown as React.TouchEvent);
-    };
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+    handleTouchEnd();
+  };
 
-    const handleTouchEnd = () => {
-      handleDragEnd();
-    };
-
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
-
-    return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [isDragging, startX, currentIndex]);
+  const handleMouseLeave = () => {
+    if (isDragging) {
+      handleTouchEnd();
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
@@ -127,63 +119,66 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
 
       <div 
         ref={containerRef}
-        className="relative h-[400px] select-none perspective-[1000px] cursor-grab active:cursor-grabbing"
-        onMouseDown={handleDragStart}
-        onMouseMove={handleDragMove}
-        onMouseUp={handleDragEnd}
-        onMouseLeave={handleDragEnd}
+        className="relative h-[350px] sm:h-[400px] w-full max-w-full overflow-hidden select-none touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
       >
-        <div className="relative w-full h-full flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center">
           {ranges.map((item, index) => {
             const offset = index - currentIndex;
             const absOffset = Math.abs(offset);
             const isActive = index === currentIndex;
             
-            // Calculate drag influence
-            const dragInfluence = isDragging ? dragOffset * 0.5 : 0;
+            // Calculate touch/drag influence
+            const dragDistance = touchEnd && touchStart ? touchEnd - touchStart : 0;
+            const dragInfluence = isDragging ? dragDistance * 0.5 : 0;
             
-            let transform = '';
-            let zIndex = 0;
+            // Only render images that are visible (current and adjacent)
+            if (absOffset > 2) return null;
+
+            // Calculate transform values
+            let translateX = 0;
+            let translateZ = 0;
+            let rotateY = 0;
             let opacity = 1;
+            let scale = 1;
 
             if (offset < 0) {
-              transform = `
-                translateX(${-150 - (absOffset - 1) * 50 + dragInfluence}px)
-                translateZ(${-100 * absOffset}px)
-                rotateY(45deg)
-              `;
-              zIndex = 10 - absOffset;
-              opacity = 1 - absOffset * 0.2;
+              translateX = -120 - (absOffset - 1) * 60 + dragInfluence;
+              translateZ = -100 * absOffset;
+              rotateY = 45;
+              opacity = 1 - absOffset * 0.4;
+              scale = 1 - absOffset * 0.2;
             } else if (offset > 0) {
-              transform = `
-                translateX(${150 + (absOffset - 1) * 50 + dragInfluence}px)
-                translateZ(${-100 * absOffset}px)
-                rotateY(-45deg)
-              `;
-              zIndex = 10 - absOffset;
-              opacity = 1 - absOffset * 0.2;
+              translateX = 120 + (absOffset - 1) * 60 + dragInfluence;
+              translateZ = -100 * absOffset;
+              rotateY = -45;
+              opacity = 1 - absOffset * 0.4;
+              scale = 1 - absOffset * 0.2;
             } else {
-              transform = `
-                translateX(${dragInfluence}px)
-                translateZ(100px)
-              `;
-              zIndex = 20;
+              translateX = dragInfluence;
+              translateZ = 0;
+              scale = 1;
             }
-
-            // Only render visible images for performance
-            if (absOffset > 3) return null;
 
             return (
               <div
                 key={item.range}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSelect(index);
-                }}
+                onClick={() => handleSelect(index)}
                 className="absolute transition-all duration-300 ease-out"
                 style={{
-                  transform,
-                  zIndex,
+                  transform: `
+                    translateX(${translateX}px)
+                    translateZ(${translateZ}px)
+                    rotateY(${rotateY}deg)
+                    scale(${scale})
+                  `,
+                  zIndex: 10 - absOffset,
                   opacity: opacity > 0 ? opacity : 0,
                 }}
               >
@@ -191,7 +186,7 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
                   <img
                     src={item.image}
                     alt={`Body fat ${item.range}`}
-                    className={`w-[250px] h-[350px] object-cover rounded-lg shadow-xl
+                    className={`w-[200px] sm:w-[250px] h-[280px] sm:h-[350px] object-cover rounded-lg shadow-xl
                       ${isActive ? 'ring-4 ring-blue-500' : ''}
                       ${selectedValue === item.avg ? 'ring-4 ring-green-500' : ''}`}
                     draggable="false"
@@ -200,7 +195,7 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
                     isActive ? 'bg-black/0' : 'bg-black/20'
                   }`} />
                   <div className="absolute bottom-4 left-0 right-0 text-center">
-                    <span className="bg-black/60 text-white px-4 py-2 rounded-full text-lg font-bold">
+                    <span className="bg-black/60 text-white px-4 py-2 rounded-full text-sm sm:text-lg font-bold">
                       {item.range}
                     </span>
                   </div>
