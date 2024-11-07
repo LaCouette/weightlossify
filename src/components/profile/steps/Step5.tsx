@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FormData } from '../../../types/profile';
-import { Target, ChevronRight, Info } from 'lucide-react';
+import { Target, Activity, Scale } from 'lucide-react';
 import { MaintenanceCard } from './MaintenanceCard';
-import { StepsCard } from './StepsCard';
-import { CaloriesCard } from './CaloriesCard';
 import {
   calculateBMR,
   calculateBaseMaintenance,
@@ -40,6 +38,7 @@ export function Step5({ formData, onChange }: Step5Props) {
   // Get initial balanced recommendation
   const initialReco = getInitialRecommendation(baseMaintenance, targetChange, isGain);
 
+  const [activeSlider, setActiveSlider] = useState<'calories' | 'steps' | null>(null);
   const [values, setValues] = useState({
     targetCalories: initialReco.calories,
     targetSteps: initialReco.steps
@@ -50,14 +49,12 @@ export function Step5({ formData, onChange }: Step5Props) {
   const currentChange = values.targetCalories - totalMaintenance;
 
   const handleCaloriesChange = (newCalories: number) => {
-    // Calculate required steps for the new calorie target
     const requiredSteps = calculateRequiredSteps(
       newCalories,
       baseMaintenance,
       targetChange
     );
 
-    // If required steps would exceed MAX_STEPS, calculate the maximum possible calories
     if (requiredSteps > MAX_STEPS) {
       const maxNeat = calculateNEAT(MAX_STEPS);
       const maxTotalMaintenance = baseMaintenance + maxNeat;
@@ -70,7 +67,6 @@ export function Step5({ formData, onChange }: Step5Props) {
       return;
     }
 
-    // If required steps would go below 0, calculate the minimum possible calories
     if (requiredSteps < 0) {
       const minPossibleCalories = baseMaintenance + targetChange;
       
@@ -92,7 +88,6 @@ export function Step5({ formData, onChange }: Step5Props) {
     const newTotalMaintenance = baseMaintenance + newNeat;
     const newCalories = calculateTargetCalories(newTotalMaintenance, targetChange);
 
-    // If new calories would exceed maxCalories, calculate the maximum possible steps
     if (newCalories > maxCalories) {
       const maxPossibleSteps = Math.round((maxCalories - targetChange - baseMaintenance) / CALORIES_PER_STEP);
       
@@ -103,7 +98,6 @@ export function Step5({ formData, onChange }: Step5Props) {
       return;
     }
 
-    // If new calories would go below minCalories, calculate the minimum possible steps
     if (newCalories < minCalories) {
       const minPossibleSteps = Math.round((minCalories - targetChange - baseMaintenance) / CALORIES_PER_STEP);
       
@@ -120,7 +114,7 @@ export function Step5({ formData, onChange }: Step5Props) {
     });
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     onChange({
       target: { name: 'dailyCalorieTarget', value: values.targetCalories.toString() }
     } as React.ChangeEvent<HTMLInputElement>);
@@ -130,7 +124,6 @@ export function Step5({ formData, onChange }: Step5Props) {
     } as React.ChangeEvent<HTMLInputElement>);
   }, [values.targetCalories, values.targetSteps]);
 
-  // Calculate slider limits based on current values
   const maxPossibleSteps = values.targetCalories === maxCalories 
     ? values.targetSteps 
     : MAX_STEPS;
@@ -148,94 +141,110 @@ export function Step5({ formData, onChange }: Step5Props) {
     : minCalories;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header Section */}
+    <div className="max-w-4xl mx-auto space-y-6 px-4 sm:px-6">
       <div className="text-center space-y-4">
         <h2 className="text-2xl font-bold text-gray-900">Your Personalized Plan</h2>
-        <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full">
+        <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full">
           <Target className="h-5 w-5 text-purple-600 mr-2" />
-          <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 text-transparent bg-clip-text">
+          <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 text-transparent bg-clip-text">
             Target {isGain ? 'Surplus' : 'Deficit'}: {Math.abs(targetChange)} calories/day
           </span>
         </div>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Based on your goal to {isGain ? 'gain muscle' : 'lose weight'}, we've calculated your optimal calorie and activity targets.
-          Adjust the sliders below to find the perfect balance for you.
-        </p>
       </div>
 
-      <div className="grid gap-6">
-        {/* Info Card */}
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start space-x-3">
-          <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-blue-700">
-            {isGain 
-              ? "For muscle gain, we recommend a moderate caloric surplus combined with strength training. The activity level is kept lower to prioritize recovery and muscle growth."
-              : "Your plan includes both diet and activity adjustments. The calculator automatically balances your calorie intake with your activity level to help you reach your weight loss goal."}
-          </p>
+      <MaintenanceCard
+        baseMaintenance={baseMaintenance}
+        neat={neat}
+        total={totalMaintenance}
+      />
+
+      {/* Calories Slider */}
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-orange-50 rounded-lg">
+            <Scale className="h-5 w-5 text-orange-600" />
+          </div>
+          <h3 className="font-bold text-gray-900">Daily Calorie Target</h3>
         </div>
 
-        {/* Main Cards */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <MaintenanceCard
-            baseMaintenance={baseMaintenance}
-            neat={neat}
-            total={totalMaintenance}
-          />
-          <CaloriesCard
-            calories={values.targetCalories}
-            change={currentChange}
-            minCalories={minPossibleCalories}
-            maxCalories={maxPossibleCalories}
-            onChange={handleCaloriesChange}
-            isGain={isGain}
-          />
+        <div className="space-y-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-orange-600">
+              {Math.round(values.targetCalories)}
+            </div>
+            <div className="text-sm text-gray-500">calories per day</div>
+          </div>
+
+          <div 
+            className="relative pt-6 pb-2"
+            onTouchStart={() => setActiveSlider('calories')}
+            onTouchEnd={() => setActiveSlider(null)}
+          >
+            <input
+              type="range"
+              min={minPossibleCalories}
+              max={maxPossibleCalories}
+              value={values.targetCalories}
+              onChange={(e) => handleCaloriesChange(Number(e.target.value))}
+              className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600 ${
+                activeSlider === 'calories' ? 'ring-2 ring-orange-500' : ''
+              }`}
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-2">
+              <span>{minPossibleCalories}</span>
+              <span>{maxPossibleCalories}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Steps Slider */}
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-green-50 rounded-lg">
+            <Activity className="h-5 w-5 text-green-600" />
+          </div>
+          <h3 className="font-bold text-gray-900">Daily Steps Target</h3>
         </div>
 
-        <StepsCard
-          steps={values.targetSteps}
-          calories={neat}
-          minSteps={minPossibleSteps}
-          maxSteps={maxPossibleSteps}
-          onChange={handleStepsChange}
-          isGain={isGain}
-        />
-
-        {/* Results Section */}
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <Target className="h-6 w-6 text-purple-600" />
-              <h3 className="text-xl font-bold text-gray-900">Daily Targets Summary</h3>
+        <div className="space-y-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-600">
+              {values.targetSteps.toLocaleString()}
             </div>
-            <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-purple-100">
-              <span className="font-medium text-lg text-purple-600">
-                {Math.abs(currentChange)} cal {isGain ? 'surplus' : 'deficit'}
-              </span>
-            </div>
+            <div className="text-sm text-gray-500">steps per day</div>
           </div>
 
-          <div className="grid grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-purple-100">
-              <span className="text-sm text-gray-500 block mb-1">Maintenance</span>
-              <span className="text-2xl font-bold text-gray-900">{totalMaintenance}</span>
-              <span className="text-sm text-gray-500 block mt-1">calories/day</span>
-            </div>
-            
-            <div className="flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <ChevronRight className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-purple-100">
-              <span className="text-sm text-gray-500 block mb-1">Target Intake</span>
-              <span className="text-2xl font-bold text-purple-600">{values.targetCalories}</span>
-              <span className="text-sm text-gray-500 block mt-1">calories/day</span>
+          <div 
+            className="relative pt-6 pb-2"
+            onTouchStart={() => setActiveSlider('steps')}
+            onTouchEnd={() => setActiveSlider(null)}
+          >
+            <input
+              type="range"
+              min={minPossibleSteps}
+              max={maxPossibleSteps}
+              value={values.targetSteps}
+              onChange={(e) => handleStepsChange(Number(e.target.value))}
+              className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600 ${
+                activeSlider === 'steps' ? 'ring-2 ring-green-500' : ''
+              }`}
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-2">
+              <span>{minPossibleSteps.toLocaleString()}</span>
+              <span>{maxPossibleSteps.toLocaleString()}</span>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="mt-6 text-sm text-gray-600 text-center">
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm">
+        <div className="text-center space-y-2">
+          <div className="font-medium text-gray-900">Daily Target Summary</div>
+          <div className="text-2xl font-bold text-purple-600">
+            {Math.abs(currentChange)} cal {isGain ? 'surplus' : 'deficit'}
+          </div>
+          <div className="text-sm text-gray-600">
             Following these targets should result in approximately {(Math.abs(currentChange) * 7 / 7700).toFixed(2)}kg of {isGain ? 'weight gain' : 'weight loss'} per week
           </div>
         </div>
