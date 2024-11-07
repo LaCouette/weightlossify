@@ -193,7 +193,7 @@ export function Step4({ formData, onChange }: Step4Props) {
                     style={{
                       width: `${(value / muscularPotential.at15) * 100}%`
                     }}
-                  />
+                    />
                 </div>
               </div>
             ))}
