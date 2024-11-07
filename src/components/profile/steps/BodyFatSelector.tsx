@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Percent, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Percent } from 'lucide-react';
 
 interface BodyFatSelectorProps {
   gender: string;
@@ -33,16 +33,83 @@ const femaleBodyFatRanges = [
 export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSelectorProps) {
   const ranges = gender === 'female' ? femaleBodyFatRanges : maleBodyFatRanges;
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const handlePrevious = () => {
-    setCurrentIndex((prev) => Math.max(0, prev - 1));
+  const handleSelect = (index: number) => {
+    if (!isDragging) {
+      setCurrentIndex(index);
+      onChange(ranges[index].avg);
+    }
   };
 
-  const handleNext = () => {
-    setCurrentIndex((prev) => Math.min(ranges.length - 1, prev + 1));
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsDragging(true);
+    setStartX(
+      'touches' in e 
+        ? e.touches[0].clientX 
+        : (e as React.MouseEvent).clientX
+    );
   };
 
-  const currentImage = ranges[currentIndex];
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging) return;
+    
+    const currentX = 'touches' in e 
+      ? e.touches[0].clientX 
+      : (e as React.MouseEvent).clientX;
+    const diff = currentX - startX;
+    setDragOffset(diff);
+
+    // Prevent page scrolling during drag
+    e.preventDefault();
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+
+    const threshold = 50; // Swipe threshold to change image
+    
+    if (dragOffset > threshold && currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+      onChange(ranges[currentIndex - 1].avg);
+    } else if (dragOffset < -threshold && currentIndex < ranges.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+      onChange(ranges[currentIndex + 1].avg);
+    }
+
+    setIsDragging(false);
+    setDragOffset(0);
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      handleDragStart(e as unknown as React.TouchEvent);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      handleDragMove(e as unknown as React.TouchEvent);
+    };
+
+    const handleTouchEnd = () => {
+      handleDragEnd();
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDragging, startX, currentIndex]);
 
   return (
     <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
@@ -53,64 +120,103 @@ export function BodyFatSelector({ gender, selectedValue, onChange }: BodyFatSele
         <div>
           <label className="block font-bold text-gray-900">Estimate Your Body Fat</label>
           <p className="text-sm text-gray-600 mt-1">
-            Swipe or use arrows to find your match
+            Swipe or click images to select your match
           </p>
         </div>
       </div>
 
-      <div className="relative">
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-          <button
-            onClick={handlePrevious}
-            disabled={currentIndex === 0}
-            className="p-2 bg-white/90 rounded-full shadow-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft className="h-6 w-6 text-gray-600" />
-          </button>
-        </div>
+      <div 
+        ref={containerRef}
+        className="relative h-[400px] select-none perspective-[1000px] cursor-grab active:cursor-grabbing"
+        onMouseDown={handleDragStart}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+      >
+        <div className="relative w-full h-full flex items-center justify-center">
+          {ranges.map((item, index) => {
+            const offset = index - currentIndex;
+            const absOffset = Math.abs(offset);
+            const isActive = index === currentIndex;
+            
+            // Calculate drag influence
+            const dragInfluence = isDragging ? dragOffset * 0.5 : 0;
+            
+            let transform = '';
+            let zIndex = 0;
+            let opacity = 1;
 
-        <div className="relative mx-auto max-w-sm">
-          <div
-            onClick={() => onChange(currentImage.avg)}
-            className={`relative transition-all duration-200 ${
-              selectedValue === currentImage.avg 
-                ? 'ring-4 ring-blue-500 ring-offset-2'
-                : 'hover:ring-2 hover:ring-blue-300 hover:ring-offset-1'
-            }`}
-          >
-            <div className="aspect-w-3 aspect-h-4 rounded-lg overflow-hidden bg-gray-100">
-              <img
-                src={currentImage.image}
-                alt={`Body fat ${currentImage.range}`}
-                className="object-cover w-full h-full"
-                loading="lazy"
-              />
-              <div className={`absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-100`}>
-                <div className="absolute bottom-4 left-0 right-0 text-white text-center">
-                  <span className="text-xl font-bold">{currentImage.range}</span>
+            if (offset < 0) {
+              transform = `
+                translateX(${-150 - (absOffset - 1) * 50 + dragInfluence}px)
+                translateZ(${-100 * absOffset}px)
+                rotateY(45deg)
+              `;
+              zIndex = 10 - absOffset;
+              opacity = 1 - absOffset * 0.2;
+            } else if (offset > 0) {
+              transform = `
+                translateX(${150 + (absOffset - 1) * 50 + dragInfluence}px)
+                translateZ(${-100 * absOffset}px)
+                rotateY(-45deg)
+              `;
+              zIndex = 10 - absOffset;
+              opacity = 1 - absOffset * 0.2;
+            } else {
+              transform = `
+                translateX(${dragInfluence}px)
+                translateZ(100px)
+              `;
+              zIndex = 20;
+            }
+
+            // Only render visible images for performance
+            if (absOffset > 3) return null;
+
+            return (
+              <div
+                key={item.range}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelect(index);
+                }}
+                className="absolute transition-all duration-300 ease-out"
+                style={{
+                  transform,
+                  zIndex,
+                  opacity: opacity > 0 ? opacity : 0,
+                }}
+              >
+                <div className="relative">
+                  <img
+                    src={item.image}
+                    alt={`Body fat ${item.range}`}
+                    className={`w-[250px] h-[350px] object-cover rounded-lg shadow-xl
+                      ${isActive ? 'ring-4 ring-blue-500' : ''}
+                      ${selectedValue === item.avg ? 'ring-4 ring-green-500' : ''}`}
+                    draggable="false"
+                  />
+                  <div className={`absolute inset-0 rounded-lg transition-all ${
+                    isActive ? 'bg-black/0' : 'bg-black/20'
+                  }`} />
+                  <div className="absolute bottom-4 left-0 right-0 text-center">
+                    <span className="bg-black/60 text-white px-4 py-2 rounded-full text-lg font-bold">
+                      {item.range}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="absolute bottom-4 left-4 right-4">
-            <div className="bg-gray-200 h-1 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-blue-500 transition-all duration-300"
-                style={{ width: `${((currentIndex + 1) / ranges.length) * 100}%` }}
-              />
-            </div>
-          </div>
+            );
+          })}
         </div>
+      </div>
 
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10">
-          <button
-            onClick={handleNext}
-            disabled={currentIndex === ranges.length - 1}
-            className="p-2 bg-white/90 rounded-full shadow-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronRight className="h-6 w-6 text-gray-600" />
-          </button>
+      <div className="mt-4">
+        <div className="bg-gray-200 h-1 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-blue-500 transition-all duration-300"
+            style={{ width: `${((currentIndex + 1) / ranges.length) * 100}%` }}
+          />
         </div>
       </div>
 
