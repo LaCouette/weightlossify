@@ -6,7 +6,6 @@ import {
   calculateBMR,
   calculateBaseMaintenance,
   calculateNEAT,
-  calculateDailySurplusOrDeficit,
   calculateRequiredSteps,
   calculateTargetCalories,
   getInitialRecommendation,
@@ -21,6 +20,7 @@ interface Step5Props {
 
 export function Step5({ formData, onChange }: Step5Props) {
   const isGain = formData.primaryGoal === 'muscle_gain';
+  const isMaintenance = formData.primaryGoal === 'maintenance';
   
   const bmr = calculateBMR(
     Number(formData.currentWeight),
@@ -31,9 +31,24 @@ export function Step5({ formData, onChange }: Step5Props) {
   );
   
   const baseMaintenance = calculateBaseMaintenance(bmr);
-  const targetChange = calculateDailySurplusOrDeficit(Number(formData.weeklyWeightGoal), isGain);
-  const maxCalories = Math.round(baseMaintenance * (isGain ? 1.7 : 1.5));
-  const minCalories = Math.round(baseMaintenance * (isGain ? 1.1 : 0.5));
+  
+  // Calculate target change based on selected goal
+  const targetChange = (() => {
+    if (isMaintenance) {
+      return 0; // No deficit/surplus for maintenance
+    }
+    if (isGain) {
+      // Calculate 7.5% surplus for muscle gain
+      return Math.round(baseMaintenance * 0.075);
+    }
+    // Use exact deficit from selected plan in Step3
+    return formData.weeklyWeightGoal === '0.35' ? -350 : // moderate loss
+           formData.weeklyWeightGoal === '0.6' ? -600 : // aggressive loss
+           0; // default to maintenance
+  })();
+
+  const maxCalories = Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 1.3 : 1.5));
+  const minCalories = Math.round(baseMaintenance * (isGain ? 1.1 : isMaintenance ? 0.9 : 0.5));
 
   // Get initial balanced recommendation
   const initialReco = getInitialRecommendation(baseMaintenance, targetChange, isGain);
@@ -49,69 +64,67 @@ export function Step5({ formData, onChange }: Step5Props) {
   const currentChange = values.targetCalories - totalMaintenance;
 
   const handleCaloriesChange = (newCalories: number) => {
+    // Clamp calories within bounds
+    const clampedCalories = Math.min(Math.max(newCalories, minCalories), maxCalories);
+    
+    // Calculate required steps for these calories
     const requiredSteps = calculateRequiredSteps(
-      newCalories,
+      clampedCalories,
       baseMaintenance,
       targetChange
     );
 
-    if (requiredSteps > MAX_STEPS) {
-      const maxNeat = calculateNEAT(MAX_STEPS);
-      const maxTotalMaintenance = baseMaintenance + maxNeat;
-      const maxPossibleCalories = calculateTargetCalories(maxTotalMaintenance, targetChange);
+    // Clamp steps within bounds
+    const clampedSteps = Math.min(Math.max(requiredSteps, 0), MAX_STEPS);
+
+    // If steps would be out of bounds, recalculate calories
+    if (requiredSteps !== clampedSteps) {
+      const newNeat = calculateNEAT(clampedSteps);
+      const newTotalMaintenance = baseMaintenance + newNeat;
+      const recalculatedCalories = calculateTargetCalories(newTotalMaintenance, targetChange);
       
       setValues({
-        targetCalories: maxPossibleCalories,
-        targetSteps: MAX_STEPS
+        targetCalories: Math.min(Math.max(recalculatedCalories, minCalories), maxCalories),
+        targetSteps: clampedSteps
       });
-      return;
-    }
-
-    if (requiredSteps < 0) {
-      const minPossibleCalories = baseMaintenance + targetChange;
-      
+    } else {
       setValues({
-        targetCalories: minPossibleCalories,
-        targetSteps: 0
+        targetCalories: clampedCalories,
+        targetSteps: clampedSteps
       });
-      return;
     }
-
-    setValues({
-      targetCalories: newCalories,
-      targetSteps: requiredSteps
-    });
   };
 
   const handleStepsChange = (newSteps: number) => {
-    const newNeat = calculateNEAT(newSteps);
+    // Clamp steps within bounds
+    const clampedSteps = Math.min(Math.max(newSteps, 0), MAX_STEPS);
+    
+    // Calculate calories for these steps
+    const newNeat = calculateNEAT(clampedSteps);
     const newTotalMaintenance = baseMaintenance + newNeat;
     const newCalories = calculateTargetCalories(newTotalMaintenance, targetChange);
 
-    if (newCalories > maxCalories) {
-      const maxPossibleSteps = Math.round((maxCalories - targetChange - baseMaintenance) / CALORIES_PER_STEP);
+    // Clamp calories within bounds
+    const clampedCalories = Math.min(Math.max(newCalories, minCalories), maxCalories);
+
+    // If calories would be out of bounds, recalculate steps
+    if (newCalories !== clampedCalories) {
+      const requiredSteps = calculateRequiredSteps(
+        clampedCalories,
+        baseMaintenance,
+        targetChange
+      );
       
       setValues({
-        targetCalories: maxCalories,
-        targetSteps: maxPossibleSteps
+        targetCalories: clampedCalories,
+        targetSteps: Math.min(Math.max(requiredSteps, 0), MAX_STEPS)
       });
-      return;
-    }
-
-    if (newCalories < minCalories) {
-      const minPossibleSteps = Math.round((minCalories - targetChange - baseMaintenance) / CALORIES_PER_STEP);
-      
+    } else {
       setValues({
-        targetCalories: minCalories,
-        targetSteps: minPossibleSteps
+        targetCalories: clampedCalories,
+        targetSteps: clampedSteps
       });
-      return;
     }
-
-    setValues({
-      targetCalories: newCalories,
-      targetSteps: newSteps
-    });
   };
 
   React.useEffect(() => {
@@ -124,32 +137,18 @@ export function Step5({ formData, onChange }: Step5Props) {
     } as React.ChangeEvent<HTMLInputElement>);
   }, [values.targetCalories, values.targetSteps]);
 
-  const maxPossibleSteps = values.targetCalories === maxCalories 
-    ? values.targetSteps 
-    : MAX_STEPS;
-
-  const minPossibleSteps = values.targetCalories === minCalories
-    ? values.targetSteps
-    : 0;
-
-  const maxPossibleCalories = values.targetSteps === MAX_STEPS
-    ? values.targetCalories
-    : maxCalories;
-
-  const minPossibleCalories = values.targetSteps === 0
-    ? values.targetCalories
-    : minCalories;
-
   return (
     <div className="max-w-4xl mx-auto space-y-6 px-4 sm:px-6">
       <div className="text-center space-y-4">
         <h2 className="text-2xl font-bold text-gray-900">Your Personalized Plan</h2>
-        <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full">
-          <Target className="h-5 w-5 text-purple-600 mr-2" />
-          <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 text-transparent bg-clip-text">
-            Target {isGain ? 'Surplus' : 'Deficit'}: {Math.abs(targetChange)} calories/day
-          </span>
-        </div>
+        {!isMaintenance && (
+          <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full">
+            <Target className="h-5 w-5 text-purple-600 mr-2" />
+            <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 text-transparent bg-clip-text">
+              Target {isGain ? 'Surplus' : 'Deficit'}: {Math.abs(targetChange)} calories/day
+            </span>
+          </div>
+        )}
       </div>
 
       <MaintenanceCard
@@ -182,8 +181,8 @@ export function Step5({ formData, onChange }: Step5Props) {
           >
             <input
               type="range"
-              min={minPossibleCalories}
-              max={maxPossibleCalories}
+              min={minCalories}
+              max={maxCalories}
               value={values.targetCalories}
               onChange={(e) => handleCaloriesChange(Number(e.target.value))}
               className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600 ${
@@ -191,8 +190,8 @@ export function Step5({ formData, onChange }: Step5Props) {
               }`}
             />
             <div className="flex justify-between text-xs text-gray-500 mt-2">
-              <span>{minPossibleCalories}</span>
-              <span>{maxPossibleCalories}</span>
+              <span>{minCalories}</span>
+              <span>{maxCalories}</span>
             </div>
           </div>
         </div>
@@ -222,8 +221,8 @@ export function Step5({ formData, onChange }: Step5Props) {
           >
             <input
               type="range"
-              min={minPossibleSteps}
-              max={maxPossibleSteps}
+              min={0}
+              max={MAX_STEPS}
               value={values.targetSteps}
               onChange={(e) => handleStepsChange(Number(e.target.value))}
               className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600 ${
@@ -231,8 +230,8 @@ export function Step5({ formData, onChange }: Step5Props) {
               }`}
             />
             <div className="flex justify-between text-xs text-gray-500 mt-2">
-              <span>{minPossibleSteps.toLocaleString()}</span>
-              <span>{maxPossibleSteps.toLocaleString()}</span>
+              <span>0</span>
+              <span>{MAX_STEPS.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -241,12 +240,25 @@ export function Step5({ formData, onChange }: Step5Props) {
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm">
         <div className="text-center space-y-2">
           <div className="font-medium text-gray-900">Daily Target Summary</div>
-          <div className="text-2xl font-bold text-purple-600">
-            {Math.abs(currentChange)} cal {isGain ? 'surplus' : 'deficit'}
-          </div>
-          <div className="text-sm text-gray-600">
-            Following these targets should result in approximately {(Math.abs(currentChange) * 7 / 7700).toFixed(2)}kg of {isGain ? 'weight gain' : 'weight loss'} per week
-          </div>
+          {isMaintenance ? (
+            <>
+              <div className="text-2xl font-bold text-purple-600">
+                Maintenance Mode
+              </div>
+              <div className="text-sm text-gray-600">
+                Focus on maintaining your current weight while improving body composition through proper nutrition and exercise.
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-2xl font-bold text-purple-600">
+                {Math.abs(currentChange)} cal {isGain ? 'surplus' : 'deficit'}
+              </div>
+              <div className="text-sm text-gray-600">
+                Following these targets should result in approximately {(Math.abs(currentChange) * 7 / 7700).toFixed(2)}kg of {isGain ? 'weight gain' : 'weight loss'} per week
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

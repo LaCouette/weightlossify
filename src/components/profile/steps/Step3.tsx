@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FormData } from '../../../types/profile';
 import { Target, Scale, Dumbbell, BarChart } from 'lucide-react';
 import { BodyFatSelector } from './BodyFatSelector';
@@ -13,11 +13,15 @@ interface Step3Props {
 type GoalType = 'weight_loss' | 'muscle_gain' | 'maintenance' | null;
 
 export function Step3({ formData, onChange }: Step3Props) {
-  const [selectedGoal, setSelectedGoal] = useState<GoalType>(null);
+  const [selectedGoal, setSelectedGoal] = useState<GoalType>(formData.primaryGoal as GoalType || null);
   const [targetWeight, setTargetWeight] = useState<number>(
     Number(formData.targetWeight) || Number(formData.currentWeight) || 70
   );
-  const [selectedPlan, setSelectedPlan] = useState<'moderate_loss' | 'aggressive_loss' | 'muscle_gain' | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<'moderate_loss' | 'aggressive_loss' | 'muscle_gain' | null>(
+    formData.weeklyWeightGoal === '0.35' ? 'moderate_loss' :
+    formData.weeklyWeightGoal === '0.6' ? 'aggressive_loss' :
+    formData.primaryGoal === 'muscle_gain' ? 'muscle_gain' : null
+  );
 
   const handleBodyFatSelect = (value: number) => {
     onChange({
@@ -215,7 +219,10 @@ export function Step3({ formData, onChange }: Step3Props) {
           <WeightManagementGoals
             currentWeight={currentWeight}
             targetWeight={targetWeight}
-            maintenanceCalories={Number(formData.dailyCalorieTarget) || 2000}
+            height={Number(formData.height)}
+            age={Number(formData.age)}
+            gender={formData.gender}
+            bodyFat={Number(formData.bodyFat)}
             selectedGoal={selectedPlan}
             onSelect={handlePlanSelect}
           />

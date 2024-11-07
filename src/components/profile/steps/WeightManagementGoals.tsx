@@ -1,10 +1,14 @@
 import React from 'react';
 import { Scale, TrendingDown } from 'lucide-react';
+import { calculateBMR } from '../../../utils/calculations';
 
 interface WeightManagementGoalsProps {
   currentWeight: number;
   targetWeight: number;
-  maintenanceCalories: number;
+  height: number;
+  age: number;
+  gender: string;
+  bodyFat?: number;
   selectedGoal: 'moderate_loss' | 'aggressive_loss' | null;
   onSelect: (goal: 'moderate_loss' | 'aggressive_loss') => void;
 }
@@ -12,10 +16,15 @@ interface WeightManagementGoalsProps {
 export function WeightManagementGoals({
   currentWeight,
   targetWeight,
-  maintenanceCalories,
+  height,
+  age,
+  gender,
+  bodyFat,
   selectedGoal,
   onSelect
 }: WeightManagementGoalsProps) {
+  const bmr = calculateBMR(currentWeight, height, age, gender, bodyFat);
+  const maintenanceCalories = Math.round(bmr * 1.1); // BMR + TEF (Thermic Effect of Food)
   const moderateDeficit = 350;
   const aggressiveDeficit = 600;
   
@@ -85,7 +94,6 @@ export function WeightManagementGoals({
                     <ul className="text-sm text-blue-700 space-y-1">
                       <li>• {(moderateWeeklyLoss * 4).toFixed(1)} kg per month</li>
                       <li>• Reach your goal in approximately {moderateTimeline.weeks} weeks ({moderateTimeline.months} months)</li>
-                      <li>• Target daily calories: {maintenanceCalories - moderateDeficit} kcal</li>
                     </ul>
                   </div>
                 </div>
@@ -134,7 +142,6 @@ export function WeightManagementGoals({
                     <ul className="text-sm text-purple-700 space-y-1">
                       <li>• {(aggressiveWeeklyLoss * 4).toFixed(1)} kg per month</li>
                       <li>• Reach your goal in approximately {aggressiveTimeline.weeks} weeks ({aggressiveTimeline.months} months)</li>
-                      <li>• Target daily calories: {maintenanceCalories - aggressiveDeficit} kcal</li>
                     </ul>
                   </div>
                 </div>
