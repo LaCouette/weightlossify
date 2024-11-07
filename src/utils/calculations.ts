@@ -56,39 +56,6 @@ export function calculateTargetCalories(tdee: number, dailyCalorieChange: number
   return tdee + dailyCalorieChange;
 }
 
-export function calculateCalorieSplit(dailyCalorieChange: number) {
-  return {
-    dietAdjustment: dailyCalorieChange * DIET_ADJUSTMENT_RATIO,
-    activityAdjustment: dailyCalorieChange * ACTIVITY_ADJUSTMENT_RATIO
-  };
-}
-
-export function calculateRecommendedStepGoal(
-  baselineSteps: number,
-  activityCalorieAdjustment: number
-): number {
-  const additionalSteps = activityCalorieAdjustment / CALORIES_PER_STEP;
-  return Math.round(baselineSteps + additionalSteps);
-}
-
-export function recalculateStepsFromCalorieAdjustment(
-  currentStepGoal: number,
-  calorieAdjustment: number,
-  isDeficit: boolean
-): number {
-  const stepAdjustment = calorieAdjustment / CALORIES_PER_STEP;
-  return Math.round(currentStepGoal + (isDeficit ? -stepAdjustment : stepAdjustment));
-}
-
-export function recalculateCaloriesFromStepAdjustment(
-  currentCalories: number,
-  stepAdjustment: number,
-  isDeficit: boolean
-): number {
-  const calorieChange = stepAdjustment * CALORIES_PER_STEP;
-  return Math.round(currentCalories + (isDeficit ? calorieChange : -calorieChange));
-}
-
 // BMI calculation
 export function calculateBMI(weight: number, height: number): number {
   const heightInMeters = height / 100;
@@ -127,7 +94,7 @@ export function calculateIdealWeight(height: number) {
   };
 }
 
-// Maximum muscular potential calculation (Martin Berkhan's Formula)
+// Maximum muscular potential calculation
 export function calculateMaxMuscularPotential(height: number) {
   const heightInCm = height;
   const leanMassAt5 = heightInCm - 100; // Weight at 5% body fat
@@ -136,5 +103,41 @@ export function calculateMaxMuscularPotential(height: number) {
     at5: leanMassAt5,
     at10: Math.round(leanMassAt5 * 1.05), // Weight at 10% body fat
     at15: Math.round(leanMassAt5 * 1.1)  // Weight at 15% body fat
+  };
+}
+
+// Calculate muscle gain potential based on training experience
+export function calculateMuscleGainPotential(
+  age: number,
+  bodyFat: number,
+  height: number,
+  gender: string
+) {
+  // Base potential calculations
+  const baseMonthlyGain = gender === 'male' ? 0.5 : 0.35; // kg per month
+  const baseYearlyGain = gender === 'male' ? 4.8 : 3.6; // kg per year
+
+  // Age factor (optimal age range is 18-25)
+  const ageFactor = age < 18 ? 0.8 : age > 40 ? 0.6 : 1;
+
+  // Body fat factor (optimal range is 10-15% for males, 18-23% for females)
+  const optimalBfRange = gender === 'male' ? { min: 10, max: 15 } : { min: 18, max: 23 };
+  let bfFactor = 1;
+  if (bodyFat < optimalBfRange.min) {
+    bfFactor = 0.8; // Too lean might impair muscle growth
+  } else if (bodyFat > optimalBfRange.max) {
+    bfFactor = 0.9; // Higher body fat might reduce muscle building efficiency
+  }
+
+  // Height factor (taller individuals have more potential for total mass)
+  const heightFactor = height > 180 ? 1.1 : height < 170 ? 0.9 : 1;
+
+  // Calculate adjusted gains
+  const monthlyGain = baseMonthlyGain * ageFactor * bfFactor * heightFactor;
+  const yearlyGain = baseYearlyGain * ageFactor * bfFactor * heightFactor;
+
+  return {
+    monthlyGain,
+    yearlyGain
   };
 }

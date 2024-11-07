@@ -38,7 +38,7 @@ export function Step5({ formData, onChange }: Step5Props) {
       return 0; // No deficit/surplus for maintenance
     }
     if (isGain) {
-      // Calculate 7.5% surplus for muscle gains
+      // Calculate 7.5% surplus for muscle gain
       return Math.round(baseMaintenance * 0.075);
     }
     // Use exact deficit from selected plan in Step3
