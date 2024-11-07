@@ -1,18 +1,25 @@
 // Constants
 export const CALORIES_PER_KG = 7700;
 export const CALORIES_PER_STEP = 0.045;
-export const DIET_ADJUSTMENT_RATIO = 0.6;
-export const ACTIVITY_ADJUSTMENT_RATIO = 0.4;
 
-// BMR calculation using Mifflin-St Jeor Equation
+// BMR calculation using Katch-McArdle Formula when body fat is available
+// Falls back to Mifflin-St Jeor when it's not
 export function calculateBMR(
   weight: number,
   height: number,
   age: number,
-  gender: string
+  gender: string,
+  bodyFat?: number
 ): number {
-  const baseBMR = 10 * weight + 6.25 * height - 5 * age;
-  return gender === 'male' ? baseBMR + 5 : baseBMR - 161;
+  if (typeof bodyFat === 'number' && !isNaN(bodyFat)) {
+    // Katch-McArdle Formula
+    const leanBodyMass = weight * (1 - bodyFat / 100);
+    return 370 + (21.6 * leanBodyMass);
+  } else {
+    // Mifflin-St Jeor Equation as fallback
+    const baseBMR = 10 * weight + 6.25 * height - 5 * age;
+    return gender === 'male' ? baseBMR + 5 : baseBMR - 161;
+  }
 }
 
 // TDEE calculation based on activity level

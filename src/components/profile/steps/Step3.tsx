@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FormData } from '../../../types/profile';
-import { Target, Scale, Dumbbell, Crosshair } from 'lucide-react';
+import { Target, Scale, Dumbbell } from 'lucide-react';
+import { BodyFatSelector } from './BodyFatSelector';
 
 interface Step3Props {
   formData: FormData;
@@ -8,8 +9,35 @@ interface Step3Props {
 }
 
 export function Step3({ formData, onChange }: Step3Props) {
+  const [targetWeightDisplay, setTargetWeightDisplay] = useState(
+    formData.targetWeight?.toString() || formData.currentWeight?.toString() || '70.0'
+  );
+
+  const handleBodyFatSelect = (value: number) => {
+    onChange({
+      target: {
+        name: 'bodyFat',
+        value: value.toString()
+      }
+    } as React.ChangeEvent<HTMLInputElement>);
+  };
+
+  const handleWeightChange = (value: string) => {
+    // Convert to number and round to nearest 0.5
+    const numValue = Math.round(parseFloat(value) * 2) / 2;
+    // Format to always show one decimal place
+    const formattedValue = numValue.toFixed(1);
+    setTargetWeightDisplay(formattedValue);
+    onChange({
+      target: {
+        name: 'targetWeight',
+        value: formattedValue
+      }
+    } as React.ChangeEvent<HTMLInputElement>);
+  };
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8">
       <div className="text-center space-y-4">
         <h2 className="text-2xl font-bold text-gray-900">Set Your Goals</h2>
         <p className="text-gray-600 max-w-xl mx-auto">
@@ -18,6 +46,12 @@ export function Step3({ formData, onChange }: Step3Props) {
       </div>
 
       <div className="space-y-6">
+        <BodyFatSelector
+          gender={formData.gender}
+          selectedValue={Number(formData.bodyFat)}
+          onChange={handleBodyFatSelect}
+        />
+
         {/* Primary Goal */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
@@ -70,19 +104,32 @@ export function Step3({ formData, onChange }: Step3Props) {
               </div>
               <label className="block font-bold text-gray-900">Target Weight</label>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold text-blue-600">{targetWeightDisplay} kg</span>
+                <input
+                  type="number"
+                  value={targetWeightDisplay}
+                  onChange={(e) => handleWeightChange(e.target.value)}
+                  className="w-20 p-2 text-right border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  step="0.5"
+                  min="40"
+                  max={Number(formData.currentWeight) - 0.5}
+                />
+              </div>
               <input
-                type="number"
-                name="targetWeight"
-                min={30}
-                max={formData.currentWeight - 1}
-                step="0.1"
-                value={formData.targetWeight || ''}
-                onChange={onChange}
-                placeholder="Enter your target weight"
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                type="range"
+                value={targetWeightDisplay}
+                onChange={(e) => handleWeightChange(e.target.value)}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                min="40"
+                max={Number(formData.currentWeight) - 0.5}
+                step="0.5"
               />
-              <span className="text-sm text-gray-500 min-w-[60px]">kg</span>
+              <div className="flex justify-between text-sm text-gray-500">
+                <span>40 kg</span>
+                <span>{(Number(formData.currentWeight) - 0.5).toFixed(1)} kg</span>
+              </div>
             </div>
           </div>
         )}
@@ -92,7 +139,7 @@ export function Step3({ formData, onChange }: Step3Props) {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 mb-4">
               <div className="p-2 bg-green-50 rounded-lg">
-                <Crosshair className="h-5 w-5 text-green-600" />
+                <Target className="h-5 w-5 text-green-600" />
               </div>
               <label className="block font-bold text-gray-900">
                 {formData.primaryGoal === 'weight_loss' ? 'Weekly Weight Loss Goal' : 'Monthly Muscle Gain Goal'}
@@ -128,31 +175,6 @@ export function Step3({ formData, onChange }: Step3Props) {
             </p>
           </div>
         )}
-
-        {/* Secondary Goal */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="p-2 bg-orange-50 rounded-lg">
-              <Target className="h-5 w-5 text-orange-600" />
-            </div>
-            <label className="block font-bold text-gray-900">Secondary Goal</label>
-          </div>
-          <select
-            name="secondaryGoal"
-            required
-            value={formData.secondaryGoal}
-            onChange={onChange}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-          >
-            <option value="">Select your secondary goal</option>
-            <option value="body_composition">Improve Body Composition</option>
-            <option value="stamina">Increase Stamina</option>
-            <option value="diet_quality">Improve Diet Quality</option>
-          </select>
-          <p className="mt-2 text-sm text-gray-500">
-            Your secondary goal helps us fine-tune your nutrition and activity recommendations.
-          </p>
-        </div>
       </div>
     </div>
   );

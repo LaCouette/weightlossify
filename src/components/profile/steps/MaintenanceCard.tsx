@@ -1,4 +1,3 @@
-import React from 'react';
 import { Activity, Footprints, Scale } from 'lucide-react';
 
 interface MaintenanceCardProps {

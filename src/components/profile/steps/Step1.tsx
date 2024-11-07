@@ -45,11 +45,10 @@ export function Step1({ formData, onChange }: Step1Props) {
             </div>
             <label className="block font-bold text-gray-900">Gender</label>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {[
               { value: 'male', label: 'Male', icon: UserCircle2 },
-              { value: 'female', label: 'Female', icon: UserCircle2 },
-              { value: 'other', label: 'Other', icon: User }
+              { value: 'female', label: 'Female', icon: UserCircle2 }
             ].map(({ value, label, icon: Icon }) => (
               <label
                 key={value}

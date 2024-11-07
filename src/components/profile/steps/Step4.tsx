@@ -1,14 +1,12 @@
 import React from 'react';
-import { FormData } from '../../../types/profile';
-import { Scale, Activity, Target, BarChart, Ruler, ChevronRight, TrendingUp } from 'lucide-react';
+import { Activity, Scale, Target, BarChart, Ruler, TrendingUp } from 'lucide-react';
 import {
   calculateBMR,
   calculateBMI,
-  calculateIdealWeights,
-  calculateMuscularPotential,
-  getBMICategory,
-  getBMIColor
-} from '../../../utils/profileCalculations';
+  calculateIdealWeight,
+  calculateMaxMuscularPotential,
+  getBMIClassification,
+} from '../../../utils/calculations';
 
 interface Step4Props {
   formData: FormData;
@@ -26,16 +24,20 @@ export function Step4({ formData, onChange }: Step4Props) {
   const height = Number(formData.height);
   const weight = Number(formData.currentWeight);
   const age = Number(formData.age);
+  const bodyFat = Number(formData.bodyFat);
 
   const bmi = calculateBMI(weight, height);
-  const bmr = calculateBMR(weight, height, age, formData.gender);
-  const idealWeights = calculateIdealWeights(height);
-  const muscularPotential = calculateMuscularPotential(height);
-  const bmiCategory = getBMICategory(bmi);
+  const bmr = calculateBMR(weight, height, age, formData.gender, bodyFat);
+  const idealWeights = calculateIdealWeight(height);
+  const muscularPotential = calculateMaxMuscularPotential(height);
+  const bmiCategory = getBMIClassification(bmi);
   const currentBmiCategory = bmiCategories.find(cat => cat.label === bmiCategory);
 
+  // Calculate Lean Body Mass
+  const leanBodyMass = weight * (1 - bodyFat / 100);
+
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8">
       <div className="text-center space-y-4">
         <h2 className="text-2xl font-bold text-gray-900">Your Health Analysis</h2>
         <p className="text-gray-600 max-w-xl mx-auto">
@@ -44,7 +46,7 @@ export function Step4({ formData, onChange }: Step4Props) {
       </div>
 
       {/* Current Stats Overview */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-100">
           <div className="flex items-center gap-2 mb-2">
             <Ruler className="h-4 w-4 text-purple-600" />
@@ -67,6 +69,14 @@ export function Step4({ formData, onChange }: Step4Props) {
             <span className="text-sm font-medium text-emerald-900">BMR</span>
           </div>
           <div className="text-2xl font-bold text-emerald-700">{Math.round(bmr)}</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-100">
+          <div className="flex items-center gap-2 mb-2">
+            <Scale className="h-4 w-4 text-orange-600" />
+            <span className="text-sm font-medium text-orange-900">Lean Mass</span>
+          </div>
+          <div className="text-2xl font-bold text-orange-700">{Math.round(leanBodyMass)} kg</div>
         </div>
       </div>
 
@@ -114,9 +124,9 @@ export function Step4({ formData, onChange }: Step4Props) {
         </div>
       </div>
 
-      {/* Ideal Weight Range */}
+      {/* Ideal Weight Range Section */}
       <div className="grid grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 shadow-lg border border-gray-200">
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
           <div className="flex items-center gap-4 mb-6">
             <div className="p-3 bg-gradient-to-r from-green-100 to-teal-100 rounded-xl">
               <Target className="h-6 w-6 text-green-600" />
@@ -128,22 +138,34 @@ export function Step4({ formData, onChange }: Step4Props) {
           </div>
 
           <div className="space-y-4">
-            {Object.entries(idealWeights).map(([formula, weight], index) => (
-              <div key={formula} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg">
-                <div className="space-y-1">
-                  <div className="text-sm font-medium text-gray-600">
-                    {formula.charAt(0).toUpperCase() + formula.slice(1)}
+            {Object.entries(idealWeights).map(([formula, weight]) => (
+              <div key={formula} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-sm font-medium text-gray-600">
+                      {formula.charAt(0).toUpperCase() + formula.slice(1)} Formula
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{weight} kg</div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{weight} kg</div>
+                  <div className={`w-2 h-full rounded-full ${
+                    Math.abs(weight - formData.currentWeight) <= 5 ? 'bg-green-500' : 'bg-gray-300'
+                  }`} />
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <div className="mt-2 h-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 transition-all"
+                    style={{
+                      width: `${(formData.currentWeight / weight) * 100}%`
+                    }}
+                  />
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Muscular Potential */}
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 shadow-lg border border-gray-200">
+        {/* Muscular Potential Section */}
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
           <div className="flex items-center gap-4 mb-6">
             <div className="p-3 bg-gradient-to-r from-orange-100 to-red-100 rounded-xl">
               <TrendingUp className="h-6 w-6 text-orange-600" />
@@ -156,23 +178,23 @@ export function Step4({ formData, onChange }: Step4Props) {
 
           <div className="space-y-4">
             {[
-              { label: '5% Body Fat', value: muscularPotential.bf5, color: 'from-red-500 to-orange-500' },
-              { label: '10% Body Fat', value: muscularPotential.bf10, color: 'from-orange-500 to-yellow-500' },
-              { label: '15% Body Fat', value: muscularPotential.bf15, color: 'from-yellow-500 to-green-500' }
-            ].map(({ label, value, color }) => (
-              <div key={label} className="relative overflow-hidden bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                <div className="relative z-10">
-                  <div className="text-sm font-medium text-gray-600">{label}</div>
-                  <div className="text-2xl font-bold bg-gradient-to-r text-transparent bg-clip-text">
-                    {value} kg
-                  </div>
+              { label: '5% Body Fat', value: muscularPotential.at5, color: 'bg-red-500', lightColor: 'bg-red-50', textColor: 'text-red-700' },
+              { label: '10% Body Fat', value: muscularPotential.at10, color: 'bg-orange-500', lightColor: 'bg-orange-50', textColor: 'text-orange-700' },
+              { label: '15% Body Fat', value: muscularPotential.at15, color: 'bg-green-500', lightColor: 'bg-green-50', textColor: 'text-green-700' }
+            ].map(({ label, value, color, lightColor, textColor }) => (
+              <div key={label} className={`${lightColor} rounded-lg p-4 border border-gray-200`}>
+                <div className="flex justify-between items-center">
+                  <span className={`font-medium ${textColor}`}>{label}</span>
+                  <span className="text-2xl font-bold text-gray-900">{value} kg</span>
                 </div>
-                <div 
-                  className={`absolute inset-0 bg-gradient-to-r ${color} opacity-10`}
-                  style={{
-                    clipPath: `polygon(0 0, ${(value / muscularPotential.bf15) * 100}% 0, ${(value / muscularPotential.bf15) * 100}% 100%, 0 100%)`
-                  }}
-                />
+                <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${color} transition-all`}
+                    style={{
+                      width: `${(value / muscularPotential.at15) * 100}%`
+                    }}
+                  />
+                </div>
               </div>
             ))}
           </div>

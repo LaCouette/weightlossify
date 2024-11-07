@@ -1,4 +1,3 @@
-import React from 'react';
 import { Footprints } from 'lucide-react';
 
 interface StepsCardProps {

@@ -28,7 +28,8 @@ export function Step5({ formData, onChange }: Step5Props) {
     Number(formData.currentWeight),
     Number(formData.height),
     Number(formData.age),
-    formData.gender
+    formData.gender,
+    Number(formData.bodyFat)
   );
   
   const baseMaintenance = calculateBaseMaintenance(bmr);
