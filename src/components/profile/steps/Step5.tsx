@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FormData } from '../../../types/profile';
-import { calculateTDEE, calculateBMR, calculateMacros } from '../../../utils/profileCalculations';
-import { Activity, Scale } from 'lucide-react';
-
-// Constants
-const CALORIES_PER_KG = 7700;
-const CALORIES_PER_STEP = 0.045;
-const DIET_ADJUSTMENT_RATIO = 0.60;
-const ACTIVITY_ADJUSTMENT_RATIO = 0.40;
+import { Target, Activity, Scale } from 'lucide-react';
+import { MaintenanceCard } from './MaintenanceCard';
+import {
+  calculateBMR,
+  calculateBaseMaintenance,
+  calculateNEAT,
+  calculateRequiredSteps,
+  calculateTargetCalories,
+  getInitialRecommendation,
+  MAX_STEPS,
+  CALORIES_PER_STEP
+} from '../../../utils/calorieCalculations';
 
 interface Step5Props {
   formData: FormData;
@@ -15,252 +19,246 @@ interface Step5Props {
 }
 
 export function Step5({ formData, onChange }: Step5Props) {
-  const [stepAdjustment, setStepAdjustment] = useState(0);
-  const [calorieAdjustment, setCalorieAdjustment] = useState(0);
-  const [selectedMacroSplit, setSelectedMacroSplit] = useState<'moderate' | 'low' | 'high'>('moderate');
-
-  // Calculate base values
+  const isGain = formData.primaryGoal === 'muscle_gain';
+  const isMaintenance = formData.primaryGoal === 'maintenance';
+  
   const bmr = calculateBMR(
     Number(formData.currentWeight),
     Number(formData.height),
     Number(formData.age),
-    formData.gender
+    formData.gender,
+    Number(formData.bodyFat)
   );
-  const tdee = calculateTDEE(bmr, formData.activityLevel);
   
-  // Determine if weight loss or muscle gain
-  const isWeightLoss = formData.primaryGoal === 'weight_loss';
-  const isMuscleGain = formData.primaryGoal === 'muscle_gain';
+  const baseMaintenance = calculateBaseMaintenance(bmr);
   
-  // Calculate daily caloric change needed based on weekly goal
-  const weeklyChange = Number(formData.weeklyWeightGoal) || 0;
-  const dailyCalorieChange = (weeklyChange * CALORIES_PER_KG) / 7;
-  
-  // Calculate caloric split between diet and activity
-  const dietCalorieAdjustment = dailyCalorieChange * DIET_ADJUSTMENT_RATIO;
-  const activityCalorieAdjustment = dailyCalorieChange * ACTIVITY_ADJUSTMENT_RATIO;
+  // Calculate target change based on selected goal
+  const targetChange = (() => {
+    if (isMaintenance) {
+      return 0; // No deficit/surplus for maintenance
+    }
+    if (isGain) {
+      // Calculate 7.5% surplus for muscle gain
+      return Math.round(baseMaintenance * 0.075);
+    }
+    // Use exact deficit from selected plan in Step3
+    return formData.weeklyWeightGoal === '0.35' ? -350 : // moderate loss
+           formData.weeklyWeightGoal === '0.6' ? -600 : // aggressive loss
+           0; // default to maintenance
+  })();
 
-  // Calculate baseline steps based on activity level
-  const baselineSteps = formData.activityLevel === 'sedentary' ? 5000 :
-    formData.activityLevel === 'light' ? 7500 :
-    formData.activityLevel === 'moderate' ? 10000 :
-    formData.activityLevel === 'very' ? 12500 : 15000;
+  const maxCalories = Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 1.3 : 1.5));
+  const minCalories = Math.round(baseMaintenance * (isGain ? 1.1 : isMaintenance ? 0.9 : 0.5));
 
-  // Calculate initial targets
-  const initialCalorieTarget = tdee + (isMuscleGain ? Math.abs(dietCalorieAdjustment) : -Math.abs(dietCalorieAdjustment));
-  const initialStepGoal = baselineSteps + (activityCalorieAdjustment / CALORIES_PER_STEP);
+  // Get initial balanced recommendation
+  const initialReco = getInitialRecommendation(baseMaintenance, targetChange, isGain);
 
-  // Calculate current targets with user adjustments
-  const currentCalorieTarget = initialCalorieTarget + calorieAdjustment;
-  const currentStepGoal = Math.max(1000, Math.round(initialStepGoal + stepAdjustment));
+  const [activeSlider, setActiveSlider] = useState<'calories' | 'steps' | null>(null);
+  const [values, setValues] = useState({
+    targetCalories: initialReco.calories,
+    targetSteps: initialReco.steps
+  });
 
-  // Calculate macros based on current calorie target
-  const macros = calculateMacros(currentCalorieTarget, selectedMacroSplit);
+  const neat = calculateNEAT(values.targetSteps);
+  const totalMaintenance = baseMaintenance + neat;
+  const currentChange = values.targetCalories - totalMaintenance;
 
-  // Update form data when values change
-  useEffect(() => {
-    onChange({
-      target: {
-        name: 'dailyCalorieTarget',
-        value: currentCalorieTarget.toString()
-      }
-    } as React.ChangeEvent<HTMLInputElement>);
-
-    onChange({
-      target: {
-        name: 'dailyStepGoal',
-        value: currentStepGoal.toString()
-      }
-    } as React.ChangeEvent<HTMLInputElement>);
-  }, [currentCalorieTarget, currentStepGoal]);
-
-  const handleStepAdjustment = (newStepGoal: number) => {
-    const stepDiff = newStepGoal - initialStepGoal;
-    setStepAdjustment(stepDiff);
-
-    // Calculate calorie impact
-    const calorieChange = stepDiff * CALORIES_PER_STEP;
+  const handleCaloriesChange = (newCalories: number) => {
+    // Clamp calories within bounds
+    const clampedCalories = Math.min(Math.max(newCalories, minCalories), maxCalories);
     
-    if (isWeightLoss) {
-      // For weight loss: more steps = can eat more while maintaining deficit
-      setCalorieAdjustment(calorieChange);
-    } else if (isMuscleGain) {
-      // For muscle gain: more steps = need more calories to maintain surplus
-      setCalorieAdjustment(calorieChange);
+    // Calculate required steps for these calories
+    const requiredSteps = calculateRequiredSteps(
+      clampedCalories,
+      baseMaintenance,
+      targetChange
+    );
+
+    // Clamp steps within bounds
+    const clampedSteps = Math.min(Math.max(requiredSteps, 0), MAX_STEPS);
+
+    // If steps would be out of bounds, recalculate calories
+    if (requiredSteps !== clampedSteps) {
+      const newNeat = calculateNEAT(clampedSteps);
+      const newTotalMaintenance = baseMaintenance + newNeat;
+      const recalculatedCalories = calculateTargetCalories(newTotalMaintenance, targetChange);
+      
+      setValues({
+        targetCalories: Math.min(Math.max(recalculatedCalories, minCalories), maxCalories),
+        targetSteps: clampedSteps
+      });
+    } else {
+      setValues({
+        targetCalories: clampedCalories,
+        targetSteps: clampedSteps
+      });
     }
   };
 
-  const handleCalorieAdjustment = (newCalorieTarget: number) => {
-    const calorieDiff = newCalorieTarget - initialCalorieTarget;
-    setCalorieAdjustment(calorieDiff);
+  const handleStepsChange = (newSteps: number) => {
+    // Clamp steps within bounds
+    const clampedSteps = Math.min(Math.max(newSteps, 0), MAX_STEPS);
+    
+    // Calculate calories for these steps
+    const newNeat = calculateNEAT(clampedSteps);
+    const newTotalMaintenance = baseMaintenance + newNeat;
+    const newCalories = calculateTargetCalories(newTotalMaintenance, targetChange);
 
-    // Calculate required step adjustment
-    const requiredStepChange = calorieDiff / CALORIES_PER_STEP;
-    setStepAdjustment(requiredStepChange);
+    // Clamp calories within bounds
+    const clampedCalories = Math.min(Math.max(newCalories, minCalories), maxCalories);
+
+    // If calories would be out of bounds, recalculate steps
+    if (newCalories !== clampedCalories) {
+      const requiredSteps = calculateRequiredSteps(
+        clampedCalories,
+        baseMaintenance,
+        targetChange
+      );
+      
+      setValues({
+        targetCalories: clampedCalories,
+        targetSteps: Math.min(Math.max(requiredSteps, 0), MAX_STEPS)
+      });
+    } else {
+      setValues({
+        targetCalories: clampedCalories,
+        targetSteps: clampedSteps
+      });
+    }
   };
 
-  const handleMacroSplitChange = (split: 'moderate' | 'low' | 'high') => (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent form submission
-    setSelectedMacroSplit(split);
-  };
+  React.useEffect(() => {
+    onChange({
+      target: { name: 'dailyCalorieTarget', value: values.targetCalories.toString() }
+    } as React.ChangeEvent<HTMLInputElement>);
+
+    onChange({
+      target: { name: 'dailyStepGoal', value: values.targetSteps.toString() }
+    } as React.ChangeEvent<HTMLInputElement>);
+  }, [values.targetCalories, values.targetSteps]);
 
   return (
-    <div className="space-y-8">
-      {/* Daily Goals Section */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Recommended Daily Goals</h3>
-        
-        {/* Fixed Calorie Deficit/Surplus Info */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg">
-          <p className="text-lg font-medium text-gray-900">
-            Target {isWeightLoss ? 'Deficit' : 'Surplus'}:{' '}
-            <span className="font-bold text-indigo-600">
-              {Math.abs(Math.round(dailyCalorieChange))} calories per day
+    <div className="max-w-4xl mx-auto space-y-6 px-4 sm:px-6">
+      <div className="text-center space-y-4">
+        <h2 className="text-2xl font-bold text-gray-900">Your Personalized Plan</h2>
+        {!isMaintenance && (
+          <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full">
+            <Target className="h-5 w-5 text-purple-600 mr-2" />
+            <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 text-transparent bg-clip-text">
+              Target {isGain ? 'Surplus' : 'Deficit'}: {Math.abs(targetChange)} calories/day
             </span>
-          </p>
-          <p className="text-sm text-gray-600 mt-1">
-            Expected weight {isWeightLoss ? 'loss' : 'gain'}: {Math.abs(weeklyChange)} kg per week
-          </p>
-          <div className="mt-2 text-sm text-gray-600">
-            <p>Diet adjustment: {Math.abs(Math.round(dietCalorieAdjustment))} calories</p>
-            <p>Activity adjustment: {Math.abs(Math.round(activityCalorieAdjustment))} calories</p>
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Targets Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Daily Calorie Target */}
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-6">
-            <div className="flex items-center space-x-2 mb-2">
-              <Scale className="h-5 w-5 text-indigo-600" />
-              <h4 className="text-lg font-semibold text-gray-900">Your Daily Calorie Target</h4>
-            </div>
-            <div className="flex items-baseline space-x-2">
-              <p className="text-4xl font-bold text-indigo-600">
-                {Math.round(currentCalorieTarget)}
-              </p>
-              <p className="text-xl text-indigo-600">calories</p>
-            </div>
-          </div>
+      <MaintenanceCard
+        baseMaintenance={baseMaintenance}
+        neat={neat}
+        total={totalMaintenance}
+      />
 
-          {/* Daily Steps Goal */}
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-6">
-            <div className="flex items-center space-x-2 mb-2">
-              <Activity className="h-5 w-5 text-indigo-600" />
-              <h4 className="text-lg font-semibold text-gray-900">Your Daily Steps Goal</h4>
-            </div>
-            <div className="flex items-baseline space-x-2">
-              <p className="text-4xl font-bold text-indigo-600">
-                {currentStepGoal.toLocaleString()}
-              </p>
-              <p className="text-xl text-indigo-600">steps</p>
-            </div>
+      {/* Calories Slider */}
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-orange-50 rounded-lg">
+            <Scale className="h-5 w-5 text-orange-600" />
           </div>
-        </div>
-
-        {/* TDEE Information */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <div className="flex justify-between items-center mb-2">
-            <p className="text-gray-700">Maintenance Calories (TDEE):</p>
-            <p className="text-xl font-semibold text-gray-900">{Math.round(tdee)} calories</p>
-          </div>
-          <p className="text-sm text-gray-600">
-            This is your Total Daily Energy Expenditure - the amount of calories you need to maintain your current weight.
-          </p>
+          <h3 className="font-bold text-gray-900">Daily Calorie Target</h3>
         </div>
 
         <div className="space-y-6">
-          {/* Calorie Target Adjustment */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Adjust Daily Calorie Target
-            </label>
-            <div className="flex items-center space-x-4">
-              <input
-                type="range"
-                min={isWeightLoss ? initialCalorieTarget - 500 : tdee}
-                max={isWeightLoss ? tdee : initialCalorieTarget + 500}
-                value={currentCalorieTarget}
-                onChange={(e) => handleCalorieAdjustment(Number(e.target.value))}
-                className="flex-1"
-              />
-              <span className="text-lg font-medium text-gray-900 min-w-[100px]">
-                {Math.round(currentCalorieTarget)} kcal
-              </span>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-orange-600">
+              {Math.round(values.targetCalories)}
             </div>
+            <div className="text-sm text-gray-500">calories per day</div>
           </div>
 
-          {/* Step Goal */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Adjust Daily Step Goal
-            </label>
-            <div className="flex items-center space-x-4">
-              <input
-                type="range"
-                min={Math.max(1000, initialStepGoal - 5000)}
-                max={initialStepGoal + 20000}
-                value={currentStepGoal}
-                onChange={(e) => handleStepAdjustment(Number(e.target.value))}
-                className="flex-1"
-              />
-              <span className="text-lg font-medium text-gray-900 min-w-[100px]">
-                {currentStepGoal.toLocaleString()} steps
-              </span>
+          <div 
+            className="relative pt-6 pb-2"
+            onTouchStart={() => setActiveSlider('calories')}
+            onTouchEnd={() => setActiveSlider(null)}
+          >
+            <input
+              type="range"
+              min={minCalories}
+              max={maxCalories}
+              value={values.targetCalories}
+              onChange={(e) => handleCaloriesChange(Number(e.target.value))}
+              className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600 ${
+                activeSlider === 'calories' ? 'ring-2 ring-orange-500' : ''
+              }`}
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-2">
+              <span>{minCalories}</span>
+              <span>{maxCalories}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Macro Split Section */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Recommended Macro Split</h3>
-        
-        <div className="space-y-4">
-          <div className="flex space-x-4">
-            {[
-              { value: 'moderate', label: 'Moderate Carb (30/35/35)' },
-              { value: 'low', label: 'Low Carb (40/40/20)' },
-              { value: 'high', label: 'High Carb (30/20/50)' }
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button" // Add type="button" to prevent form submission
-                onClick={handleMacroSplitChange(option.value as 'moderate' | 'low' | 'high')}
-                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium ${
-                  selectedMacroSplit === option.value
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
+      {/* Steps Slider */}
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-green-50 rounded-lg">
+            <Activity className="h-5 w-5 text-green-600" />
+          </div>
+          <h3 className="font-bold text-gray-900">Daily Steps Target</h3>
+        </div>
+
+        <div className="space-y-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-600">
+              {values.targetSteps.toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-500">steps per day</div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">Protein</p>
-              <p className="text-xl font-bold text-gray-900">{macros.protein}g</p>
-              <p className="text-sm text-gray-500">
-                {Math.round((macros.protein * 4 / currentCalorieTarget) * 100)}% of calories
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">Fats</p>
-              <p className="text-xl font-bold text-gray-900">{macros.fats}g</p>
-              <p className="text-sm text-gray-500">
-                {Math.round((macros.fats * 9 / currentCalorieTarget) * 100)}% of calories
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">Carbs</p>
-              <p className="text-xl font-bold text-gray-900">{macros.carbs}g</p>
-              <p className="text-sm text-gray-500">
-                {Math.round((macros.carbs * 4 / currentCalorieTarget) * 100)}% of calories
-              </p>
+          <div 
+            className="relative pt-6 pb-2"
+            onTouchStart={() => setActiveSlider('steps')}
+            onTouchEnd={() => setActiveSlider(null)}
+          >
+            <input
+              type="range"
+              min={0}
+              max={MAX_STEPS}
+              value={values.targetSteps}
+              onChange={(e) => handleStepsChange(Number(e.target.value))}
+              className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600 ${
+                activeSlider === 'steps' ? 'ring-2 ring-green-500' : ''
+              }`}
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-2">
+              <span>0</span>
+              <span>{MAX_STEPS.toLocaleString()}</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm">
+        <div className="text-center space-y-2">
+          <div className="font-medium text-gray-900">Daily Target Summary</div>
+          {isMaintenance ? (
+            <>
+              <div className="text-2xl font-bold text-purple-600">
+                Maintenance Mode
+              </div>
+              <div className="text-sm text-gray-600">
+                Focus on maintaining your current weight while improving body composition through proper nutrition and exercise.
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-2xl font-bold text-purple-600">
+                {Math.abs(currentChange)} cal {isGain ? 'surplus' : 'deficit'}
+              </div>
+              <div className="text-sm text-gray-600">
+                Following these targets should result in approximately {(Math.abs(currentChange) * 7 / 7700).toFixed(2)}kg of {isGain ? 'weight gain' : 'weight loss'} per week
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -1,18 +1,25 @@
 // Constants
 export const CALORIES_PER_KG = 7700;
 export const CALORIES_PER_STEP = 0.045;
-export const DIET_ADJUSTMENT_RATIO = 0.6;
-export const ACTIVITY_ADJUSTMENT_RATIO = 0.4;
 
-// BMR calculation using Mifflin-St Jeor Equation
+// BMR calculation using Katch-McArdle Formula when body fat is available
+// Falls back to Mifflin-St Jeor when it's not
 export function calculateBMR(
   weight: number,
   height: number,
   age: number,
-  gender: string
+  gender: string,
+  bodyFat?: number
 ): number {
-  const baseBMR = 10 * weight + 6.25 * height - 5 * age;
-  return gender === 'male' ? baseBMR + 5 : baseBMR - 161;
+  if (typeof bodyFat === 'number' && !isNaN(bodyFat)) {
+    // Katch-McArdle Formula
+    const leanBodyMass = weight * (1 - bodyFat / 100);
+    return 370 + (21.6 * leanBodyMass);
+  } else {
+    // Mifflin-St Jeor Equation as fallback
+    const baseBMR = 10 * weight + 6.25 * height - 5 * age;
+    return gender === 'male' ? baseBMR + 5 : baseBMR - 161;
+  }
 }
 
 // TDEE calculation based on activity level
@@ -47,39 +54,6 @@ export function calculateDailyCalorieChange(weeklyWeightGoal: number): number {
 
 export function calculateTargetCalories(tdee: number, dailyCalorieChange: number): number {
   return tdee + dailyCalorieChange;
-}
-
-export function calculateCalorieSplit(dailyCalorieChange: number) {
-  return {
-    dietAdjustment: dailyCalorieChange * DIET_ADJUSTMENT_RATIO,
-    activityAdjustment: dailyCalorieChange * ACTIVITY_ADJUSTMENT_RATIO
-  };
-}
-
-export function calculateRecommendedStepGoal(
-  baselineSteps: number,
-  activityCalorieAdjustment: number
-): number {
-  const additionalSteps = activityCalorieAdjustment / CALORIES_PER_STEP;
-  return Math.round(baselineSteps + additionalSteps);
-}
-
-export function recalculateStepsFromCalorieAdjustment(
-  currentStepGoal: number,
-  calorieAdjustment: number,
-  isDeficit: boolean
-): number {
-  const stepAdjustment = calorieAdjustment / CALORIES_PER_STEP;
-  return Math.round(currentStepGoal + (isDeficit ? -stepAdjustment : stepAdjustment));
-}
-
-export function recalculateCaloriesFromStepAdjustment(
-  currentCalories: number,
-  stepAdjustment: number,
-  isDeficit: boolean
-): number {
-  const calorieChange = stepAdjustment * CALORIES_PER_STEP;
-  return Math.round(currentCalories + (isDeficit ? calorieChange : -calorieChange));
 }
 
 // BMI calculation
@@ -120,7 +94,7 @@ export function calculateIdealWeight(height: number) {
   };
 }
 
-// Maximum muscular potential calculation (Martin Berkhan's Formula)
+// Maximum muscular potential calculation
 export function calculateMaxMuscularPotential(height: number) {
   const heightInCm = height;
   const leanMassAt5 = heightInCm - 100; // Weight at 5% body fat
@@ -129,5 +103,41 @@ export function calculateMaxMuscularPotential(height: number) {
     at5: leanMassAt5,
     at10: Math.round(leanMassAt5 * 1.05), // Weight at 10% body fat
     at15: Math.round(leanMassAt5 * 1.1)  // Weight at 15% body fat
+  };
+}
+
+// Calculate muscle gain potential based on training experience
+export function calculateMuscleGainPotential(
+  age: number,
+  bodyFat: number,
+  height: number,
+  gender: string
+) {
+  // Base potential calculations
+  const baseMonthlyGain = gender === 'male' ? 0.5 : 0.35; // kg per month
+  const baseYearlyGain = gender === 'male' ? 4.8 : 3.6; // kg per year
+
+  // Age factor (optimal age range is 18-25)
+  const ageFactor = age < 18 ? 0.8 : age > 40 ? 0.6 : 1;
+
+  // Body fat factor (optimal range is 10-15% for males, 18-23% for females)
+  const optimalBfRange = gender === 'male' ? { min: 10, max: 15 } : { min: 18, max: 23 };
+  let bfFactor = 1;
+  if (bodyFat < optimalBfRange.min) {
+    bfFactor = 0.8; // Too lean might impair muscle growth
+  } else if (bodyFat > optimalBfRange.max) {
+    bfFactor = 0.9; // Higher body fat might reduce muscle building efficiency
+  }
+
+  // Height factor (taller individuals have more potential for total mass)
+  const heightFactor = height > 180 ? 1.1 : height < 170 ? 0.9 : 1;
+
+  // Calculate adjusted gains
+  const monthlyGain = baseMonthlyGain * ageFactor * bfFactor * heightFactor;
+  const yearlyGain = baseYearlyGain * ageFactor * bfFactor * heightFactor;
+
+  return {
+    monthlyGain,
+    yearlyGain
   };
 }
