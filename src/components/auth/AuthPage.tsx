@@ -4,17 +4,25 @@ import { RegisterForm } from './RegisterForm';
 import { Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { useUserStore } from '../../stores/userStore';
 
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const { user } = useAuthStore();
+  const { profile } = useUserStore();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      // If user has completed profile setup, go to dashboard
+      // Otherwise, go to profile setup
+      if (profile?.setupCompleted) {
+        navigate('/');
+      } else {
+        navigate('/profile-setup');
+      }
     }
-  }, [user, navigate]);
+  }, [user, profile, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

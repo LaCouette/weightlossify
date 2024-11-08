@@ -6,7 +6,7 @@ import {
   calculateBMI,
   calculateIdealWeight,
   calculateMaxMuscularPotential,
-  getBMIClassification,
+  getBMICategory
 } from '../../../utils/calculations';
 
 interface Step4Props {
@@ -24,7 +24,7 @@ export function Step4({ formData }: Step4Props) {
   const bmr = calculateBMR(weight, height, age, formData.gender, bodyFat);
   const idealWeights = calculateIdealWeight(height);
   const muscularPotential = calculateMaxMuscularPotential(height);
-  const bmiCategory = getBMIClassification(bmi);
+  const bmiCategory = getBMICategory(bmi);
 
   // Calculate Lean Body Mass
   const leanBodyMass = weight * (1 - bodyFat / 100);

@@ -63,7 +63,7 @@ export function calculateBMI(weight: number, height: number): number {
 }
 
 // BMI classification
-export function getBMIClassification(bmi: number): string {
+export function getBMICategory(bmi: number): string {
   if (bmi < 18.5) return 'Underweight';
   if (bmi < 25) return 'Normal Weight';
   if (bmi < 30) return 'Overweight';

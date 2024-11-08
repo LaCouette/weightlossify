@@ -27,17 +27,18 @@ export function PrivateRoute({ children }: PrivateRouteProps) {
   }
 
   if (!user) {
-    return <Navigate to="/auth" />;
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Only redirect to profile setup if:
-  // 1. Profile doesn't exist or setup isn't completed
-  // 2. We're not already on the profile setup page
-  // 3. We're not on the auth page
-  if ((!profile || !profile.setupCompleted) && 
-      location.pathname !== '/profile-setup' && 
-      location.pathname !== '/auth') {
-    return <Navigate to="/profile-setup" />;
+  // If no profile exists or setup isn't completed, redirect to profile setup
+  // But only if we're not already on the profile setup page
+  if ((!profile || !profile.setupCompleted) && location.pathname !== '/profile-setup') {
+    return <Navigate to="/profile-setup" replace />;
+  }
+
+  // If profile setup is completed and user tries to access /profile-setup, redirect to home
+  if (profile?.setupCompleted && location.pathname === '/profile-setup') {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
