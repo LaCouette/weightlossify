@@ -12,17 +12,28 @@ import { GoalsTargets } from './sections/GoalsTargets';
 import { DailyTargets } from './sections/DailyTargets';
 import { CalculatedMetrics } from './sections/CalculatedMetrics';
 import { ProfileTimestamps } from './sections/ProfileTimestamps';
-import { FormActions } from './sections/FormActions';
+
+interface EditingSections {
+  basicInfo: boolean;
+  physicalMeasurements: boolean;
+  goalsTargets: boolean;
+  dailyTargets: boolean;
+}
 
 export function Profile() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { profile, updateProfile } = useUserStore();
-  const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [editingSections, setEditingSections] = useState<EditingSections>({
+    basicInfo: false,
+    physicalMeasurements: false,
+    goalsTargets: false,
+    dailyTargets: false
+  });
 
   useEffect(() => {
     if (profile) {
@@ -48,6 +59,47 @@ export function Profile() {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditedProfile(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        [name]: ['age', 'height', 'currentWeight', 'targetWeight', 'dailyStepGoal', 'dailyCaloriesTarget']
+          .includes(name) ? Number(value) : value
+      };
+    });
+  };
+
+  const handleSaveSection = async (section: keyof EditingSections) => {
+    if (!user || !editedProfile) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      await updateProfile(user.uid, {
+        ...editedProfile,
+        updatedAt: new Date()
+      });
+      setEditingSections(prev => ({
+        ...prev,
+        [section]: false
+      }));
+    } catch (err) {
+      setError('Failed to update profile. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelSection = (section: keyof EditingSections) => {
+    setEditingSections(prev => ({
+      ...prev,
+      [section]: false
+    }));
+    setEditedProfile(profile);
+  };
+
   if (!user || !profile || !editedProfile) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -69,91 +121,61 @@ export function Profile() {
     );
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setEditedProfile(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        [name]: ['age', 'height', 'currentWeight', 'targetWeight', 'dailyStepGoal', 'dailyCaloriesTarget']
-          .includes(name) ? Number(value) : value
-      };
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !editedProfile) return;
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      await updateProfile(user.uid, {
-        ...editedProfile,
-        updatedAt: new Date()
-      });
-      setIsEditing(false);
-    } catch (err) {
-      setError('Failed to update profile. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    setEditedProfile(profile);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <ProfileHeader
-          isEditing={isEditing}
           isResetting={isResetting}
-          setIsEditing={setIsEditing}
           onRestartSetup={handleRestartSetup}
           error={error}
         />
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <BasicInformation
-            profile={editedProfile}
-            isEditing={isEditing}
-            onChange={handleInputChange}
-          />
+        <BasicInformation
+          profile={editedProfile}
+          isEditing={editingSections.basicInfo}
+          onChange={handleInputChange}
+          onSave={() => handleSaveSection('basicInfo')}
+          onCancel={() => handleCancelSection('basicInfo')}
+          onEdit={() => setEditingSections(prev => ({ ...prev, basicInfo: true }))}
+          isLoading={isLoading}
+        />
 
-          <PhysicalMeasurements
-            profile={editedProfile}
-            isEditing={isEditing}
-            onChange={handleInputChange}
-          />
+        <PhysicalMeasurements
+          profile={editedProfile}
+          isEditing={editingSections.physicalMeasurements}
+          onChange={handleInputChange}
+          onSave={() => handleSaveSection('physicalMeasurements')}
+          onCancel={() => handleCancelSection('physicalMeasurements')}
+          onEdit={() => setEditingSections(prev => ({ ...prev, physicalMeasurements: true }))}
+          isLoading={isLoading}
+        />
 
-          <GoalsTargets
-            profile={editedProfile}
-            isEditing={isEditing}
-            onChange={handleInputChange}
-          />
+        <GoalsTargets
+          profile={editedProfile}
+          isEditing={editingSections.goalsTargets}
+          onChange={handleInputChange}
+          onSave={() => handleSaveSection('goalsTargets')}
+          onCancel={() => handleCancelSection('goalsTargets')}
+          onEdit={() => setEditingSections(prev => ({ ...prev, goalsTargets: true }))}
+          isLoading={isLoading}
+        />
 
-          <DailyTargets
-            profile={editedProfile}
-            isEditing={isEditing}
-            onChange={handleInputChange}
-          />
+        <DailyTargets
+          profile={editedProfile}
+          isEditing={editingSections.dailyTargets}
+          onChange={handleInputChange}
+          onSave={() => handleSaveSection('dailyTargets')}
+          onCancel={() => handleCancelSection('dailyTargets')}
+          onEdit={() => setEditingSections(prev => ({ ...prev, dailyTargets: true }))}
+          isLoading={isLoading}
+        />
 
-          <CalculatedMetrics profile={editedProfile} />
+        <CalculatedMetrics profile={editedProfile} />
 
-          <ProfileTimestamps
-            createdAt={profile.createdAt}
-            updatedAt={profile.updatedAt}
-          />
-
-          <FormActions
-            isEditing={isEditing}
-            isLoading={isLoading}
-            onCancel={handleCancel}
-          />
-        </form>
+        <ProfileTimestamps
+          createdAt={profile.createdAt}
+          updatedAt={profile.updatedAt}
+        />
       </div>
     </div>
   );
