@@ -127,7 +127,7 @@ export function DailyTargets({
 
       <div className="info-box mt-8">
         <strong>Note:</strong> These targets are automatically adjusted based on your selected goal 
-        and activity level. Adjust them if needed based on your progress and energy levels.
+        and activity level. Adjust them if needed, based on your progress and energy levels.
       </div>
     </motion.div>
   );
