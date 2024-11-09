@@ -22,7 +22,6 @@ export function DailyTargets({
   onCancel,
   onEdit
 }: DailyTargetsProps) {
-  // Calculate calorie adjustment based on goal
   const getCalorieAdjustment = () => {
     if (profile.primaryGoal === 'muscle_gain') {
       return `+${Math.round(profile.dailyCaloriesTarget * 0.075)} kcal surplus`;
@@ -39,68 +38,97 @@ export function DailyTargets({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-2xl p-6 shadow-lg transition-all duration-300 hover:shadow-xl"
+      className="card"
     >
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-orange-100 to-amber-200 rounded-xl shadow-md">
-            <Target className="h-5 w-5 text-orange-600" />
-          </div>
-          <h2 className="text-xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 text-transparent bg-clip-text">
-            Daily Targets
-          </h2>
+      <div className="section-header">
+        <div className="section-icon">
+          <Target className="h-6 w-6 text-indigo-600" />
         </div>
+        <h2 className="section-title text-shadow">Daily Targets</h2>
+        <p className="section-description">
+          Your daily activity and nutrition targets
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border border-orange-100/50 shadow-sm"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Activity className="h-5 w-5 text-orange-500" />
-            <div className="text-sm font-medium text-orange-700">Daily Steps Goal</div>
+        <div className="metric-card">
+          <div className="metric-header">
+            <div className="metric-icon">
+              <Activity className="h-5 w-5 text-indigo-600" />
+            </div>
+            <span className="metric-title">Daily Steps Goal</span>
           </div>
-          <div className="text-3xl font-bold text-orange-600">
-            {profile.dailyStepsGoal?.toLocaleString() || '0'}
+          <div className="mt-4">
+            <div className="metric-value">
+              {profile.dailyStepsGoal?.toLocaleString() || '0'}
+            </div>
+            <div className="metric-subtitle">steps per day</div>
+            <div className="progress-bar mt-4">
+              <div 
+                className="progress-value"
+                style={{ width: `${Math.min((profile.dailyStepsGoal / 15000) * 100, 100)}%` }}
+              />
+            </div>
           </div>
-          <div className="text-sm text-orange-500 mt-2">steps per day</div>
-        </motion.div>
+        </div>
 
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border border-orange-100/50 shadow-sm"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Scale className="h-5 w-5 text-orange-500" />
-            <div className="text-sm font-medium text-orange-700">Daily Calories Target</div>
+        <div className="metric-card">
+          <div className="metric-header">
+            <div className="metric-icon">
+              <Scale className="h-5 w-5 text-indigo-600" />
+            </div>
+            <span className="metric-title">Daily Calories Target</span>
           </div>
-          <div className="text-3xl font-bold text-orange-600">
-            {profile.dailyCaloriesTarget?.toLocaleString() || '0'}
+          <div className="mt-4">
+            <div className="metric-value">
+              {profile.dailyCaloriesTarget?.toLocaleString() || '0'}
+            </div>
+            <div className="metric-subtitle">calories per day</div>
+            <div className="text-sm font-medium text-indigo-600 mt-2">
+              ({getCalorieAdjustment()})
+            </div>
           </div>
-          <div className="text-sm text-orange-500 mt-2">calories per day</div>
-          <div className="text-sm font-medium text-orange-600 mt-2">
-            ({getCalorieAdjustment()})
-          </div>
-        </motion.div>
+        </div>
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="mt-6 bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-xl border border-orange-100/50"
-      >
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-orange-100/50 rounded-lg">
-            <Target className="h-4 w-4 text-orange-500" />
-          </div>
-          <p className="text-sm text-orange-700">
-            <strong>Note:</strong> These targets are calculated based on your goals, activity level, and current metrics. 
-            Adjust them if needed based on your progress and energy levels.
-          </p>
-        </div>
-      </motion.div>
+      <div className="mt-8 flex justify-end space-x-3">
+        {!isEditing ? (
+          <motion.button 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onEdit} 
+            className="btn btn-secondary"
+          >
+            Edit Targets
+          </motion.button>
+        ) : (
+          <>
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onCancel} 
+              disabled={isLoading}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onSave}
+              disabled={isLoading}
+              className="btn btn-primary"
+            >
+              {isLoading ? 'Saving...' : 'Save Changes'}
+            </motion.button>
+          </>
+        )}
+      </div>
+
+      <div className="info-box mt-8">
+        <strong>Note:</strong> These targets are automatically adjusted based on your selected goal 
+        and activity level. Adjust them if needed based on your progress and energy levels.
+      </div>
     </motion.div>
   );
 }

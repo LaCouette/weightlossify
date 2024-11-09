@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface ProfileTimestampsProps {
@@ -8,12 +8,13 @@ interface ProfileTimestampsProps {
 }
 
 export function ProfileTimestamps({ createdAt, updatedAt }: ProfileTimestampsProps) {
-  const formatDate = (date: Date | string | undefined) => {
-    if (!date) return 'N/A';
+  const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -22,35 +23,52 @@ export function ProfileTimestamps({ createdAt, updatedAt }: ProfileTimestampsPro
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-2xl p-6 shadow-lg transition-all duration-300 hover:shadow-xl"
+      className="card"
     >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2.5 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl shadow-md">
-          <Clock className="h-5 w-5 text-gray-600" />
+      <div className="section-header">
+        <div className="section-icon">
+          <Clock className="h-6 w-6 text-indigo-600" />
         </div>
-        <h2 className="text-xl font-bold bg-gradient-to-r from-gray-500 to-gray-600 text-transparent bg-clip-text">
-          Profile Timeline
-        </h2>
+        <h2 className="section-title text-shadow">Profile Timeline</h2>
+        <p className="section-description">
+          Track when your profile was created and last updated
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <motion.div 
           whileHover={{ scale: 1.02 }}
-          className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-4 border border-gray-100/50"
+          className="metric-card"
         >
-          <div className="text-sm font-medium text-gray-500">Created</div>
-          <div className="text-lg font-semibold text-gray-700 mt-1">
-            {formatDate(createdAt)}
+          <div className="metric-header">
+            <div className="metric-icon">
+              <Calendar className="h-5 w-5 text-indigo-600" />
+            </div>
+            <span className="metric-title">Created</span>
+          </div>
+          <div className="mt-4">
+            <div className="text-lg font-semibold text-gray-900">
+              {formatDate(createdAt)}
+            </div>
+            <div className="h-1 w-16 bg-indigo-500 rounded-full mt-2" />
           </div>
         </motion.div>
 
         <motion.div 
           whileHover={{ scale: 1.02 }}
-          className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-4 border border-gray-100/50"
+          className="metric-card"
         >
-          <div className="text-sm font-medium text-gray-500">Last Updated</div>
-          <div className="text-lg font-semibold text-gray-700 mt-1">
-            {formatDate(updatedAt)}
+          <div className="metric-header">
+            <div className="metric-icon">
+              <Clock className="h-5 w-5 text-indigo-600" />
+            </div>
+            <span className="metric-title">Last Updated</span>
+          </div>
+          <div className="mt-4">
+            <div className="text-lg font-semibold text-gray-900">
+              {formatDate(updatedAt)}
+            </div>
+            <div className="h-1 w-16 bg-indigo-500 rounded-full mt-2" />
           </div>
         </motion.div>
       </div>

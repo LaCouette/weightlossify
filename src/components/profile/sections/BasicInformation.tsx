@@ -1,7 +1,6 @@
 import React from 'react';
-import { User, Mail, Calendar } from 'lucide-react';
+import { User } from 'lucide-react';
 import { UserProfile } from '../../../types/profile';
-import { SectionActions } from './SectionActions';
 import { motion } from 'framer-motion';
 
 interface BasicInformationProps {
@@ -28,64 +27,48 @@ export function BasicInformation({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-2xl p-6 shadow-lg transition-all duration-300 hover:shadow-xl"
+      className="card"
     >
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-blue-100 to-cyan-200 rounded-xl shadow-md">
-            <User className="h-5 w-5 text-blue-600" />
-          </div>
-          <h2 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 text-transparent bg-clip-text">
-            Basic Information
-          </h2>
+      <div className="section-header">
+        <div className="section-icon">
+          <User className="h-6 w-6 text-indigo-600" />
         </div>
-        <SectionActions
-          isEditing={isEditing}
-          isLoading={isLoading}
-          onEdit={onEdit}
-          onSave={onSave}
-          onCancel={onCancel}
-        />
+        <h2 className="section-title text-shadow">Basic Information</h2>
+        <p className="section-description">
+          Your personal details help us personalize your experience
+        </p>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div 
-          whileHover={{ scale: isEditing ? 1.02 : 1 }}
-          className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-100/50 shadow-sm"
-        >
-          <label className="block text-sm font-medium text-blue-700 mb-2">Name</label>
+
+      <div className="space-y-6">
+        <div className="input-group">
+          <label className="input-label">Full Name</label>
           <input
             type="text"
             name="name"
             value={profile.name}
             onChange={onChange}
             disabled={!isEditing}
-            className="w-full bg-white/80 backdrop-blur-sm rounded-lg border-blue-100 focus:border-blue-300 focus:ring-blue-200 disabled:bg-transparent disabled:border-transparent disabled:text-blue-600 disabled:text-lg disabled:font-semibold"
+            className="input-field"
+            placeholder="Enter your full name"
           />
-        </motion.div>
+        </div>
 
-        <motion.div 
-          whileHover={{ scale: isEditing ? 1.02 : 1 }}
-          className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-100/50 shadow-sm"
-        >
-          <label className="block text-sm font-medium text-blue-700 mb-2">Gender</label>
+        <div className="input-group">
+          <label className="input-label">Gender</label>
           <select
             name="gender"
             value={profile.gender}
             onChange={onChange}
             disabled={!isEditing}
-            className="w-full bg-white/80 backdrop-blur-sm rounded-lg border-blue-100 focus:border-blue-300 focus:ring-blue-200 disabled:bg-transparent disabled:border-transparent disabled:text-blue-600 disabled:text-lg disabled:font-semibold"
+            className="input-field"
           >
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
-        </motion.div>
+        </div>
 
-        <motion.div 
-          whileHover={{ scale: isEditing ? 1.02 : 1 }}
-          className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-100/50 shadow-sm"
-        >
-          <label className="block text-sm font-medium text-blue-700 mb-2">Age</label>
+        <div className="input-group">
+          <label className="input-label">Age</label>
           <div className="relative">
             <input
               type="number"
@@ -95,13 +78,48 @@ export function BasicInformation({
               disabled={!isEditing}
               min="13"
               max="120"
-              className="w-full bg-white/80 backdrop-blur-sm rounded-lg border-blue-100 focus:border-blue-300 focus:ring-blue-200 disabled:bg-transparent disabled:border-transparent disabled:text-blue-600 disabled:text-lg disabled:font-semibold"
+              className="input-field pr-16"
+              placeholder="Enter your age"
             />
-            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <span className="text-blue-500">years</span>
+            <div className="input-addon">
+              <span>years</span>
             </div>
           </div>
-        </motion.div>
+        </div>
+
+        <div className="flex justify-end space-x-3">
+          {!isEditing ? (
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onEdit} 
+              className="btn btn-secondary"
+            >
+              Edit Information
+            </motion.button>
+          ) : (
+            <>
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onCancel} 
+                disabled={isLoading}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onSave}
+                disabled={isLoading}
+                className="btn btn-primary"
+              >
+                {isLoading ? 'Saving...' : 'Save Changes'}
+              </motion.button>
+            </>
+          )}
+        </div>
       </div>
     </motion.div>
   );

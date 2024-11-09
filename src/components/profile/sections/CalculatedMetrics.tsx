@@ -19,26 +19,35 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
     profile.bodyFat
   );
 
+  const getBmiColor = (category: string) => {
+    switch (category) {
+      case 'Underweight':
+        return 'bg-blue-500';
+      case 'Normal Weight':
+        return 'bg-green-500';
+      case 'Overweight':
+        return 'bg-yellow-500';
+      case 'Obese':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
   const metrics = [
     {
       icon: Scale,
       label: 'BMI',
       value: bmi.toFixed(1),
       subtext: bmiCategory,
-      gradient: 'from-blue-200 to-indigo-300',
-      bgGradient: 'from-blue-50 to-indigo-50',
-      textGradient: 'from-blue-500 to-indigo-500',
-      borderColor: 'border-blue-100/50'
+      indicator: getBmiColor(bmiCategory)
     },
     {
       icon: Heart,
       label: 'BMR',
-      value: Math.round(bmr).toString(),
+      value: Math.round(bmr).toLocaleString(),
       subtext: 'calories/day',
-      gradient: 'from-rose-200 to-pink-300',
-      bgGradient: 'from-rose-50 to-pink-50',
-      textGradient: 'from-rose-500 to-pink-500',
-      borderColor: 'border-rose-100/50'
+      indicator: 'bg-rose-500'
     },
     {
       icon: Target,
@@ -47,10 +56,7 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
         ? Math.abs(profile.currentWeight - profile.targetWeight).toFixed(1)
         : '-',
       subtext: 'kg remaining',
-      gradient: 'from-violet-200 to-purple-300',
-      bgGradient: 'from-violet-50 to-purple-50',
-      textGradient: 'from-violet-500 to-purple-500',
-      borderColor: 'border-violet-100/50'
+      indicator: 'bg-indigo-500'
     }
   ];
 
@@ -59,15 +65,16 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-2xl p-6 shadow-lg transition-all duration-300 hover:shadow-xl"
+      className="card"
     >
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2.5 bg-gradient-to-br from-indigo-100 to-purple-200 rounded-xl shadow-md">
-          <Activity className="h-5 w-5 text-indigo-600" />
+      <div className="section-header">
+        <div className="section-icon">
+          <Activity className="h-6 w-6 text-indigo-600" />
         </div>
-        <h2 className="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 text-transparent bg-clip-text">
-          Calculated Metrics
-        </h2>
+        <h2 className="section-title text-shadow">Calculated Metrics</h2>
+        <p className="section-description">
+          Key metrics calculated based on your measurements
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -79,24 +86,31 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{ scale: 1.02 }}
-              className={`bg-gradient-to-br ${metric.bgGradient} rounded-xl p-5 border ${metric.borderColor} shadow-sm`}
+              className="metric-card group"
             >
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`p-2 bg-gradient-to-br ${metric.gradient} rounded-lg shadow-sm`}>
-                  <Icon className="h-4 w-4 text-white" />
+              <div className="metric-header">
+                <div className="metric-icon">
+                  <Icon className="h-5 w-5 text-indigo-600" />
                 </div>
-                <span className={`text-sm font-medium bg-gradient-to-r text-transparent bg-clip-text ${metric.textGradient}`}>
-                  {metric.label}
-                </span>
+                <span className="metric-title">{metric.label}</span>
               </div>
-              <div className={`text-3xl font-bold bg-gradient-to-r text-transparent bg-clip-text ${metric.textGradient}`}>
-                {metric.value}
+              <div className="flex items-end gap-3 mt-4">
+                <div className="metric-value group-hover:text-indigo-600 transition-colors">
+                  {metric.value}
+                </div>
+                <div className="h-8 w-1 rounded-full mb-1 opacity-75 transition-all group-hover:h-12 group-hover:opacity-100" 
+                  style={{ backgroundColor: `var(--tw-${metric.indicator})` }} 
+                />
               </div>
-              <div className="text-sm text-gray-500 mt-1">{metric.subtext}</div>
+              <div className="metric-subtitle">{metric.subtext}</div>
             </motion.div>
           );
         })}
+      </div>
+
+      <div className="info-box mt-8">
+        <strong>Note:</strong> These metrics are automatically calculated based on your current measurements 
+        and help us determine your optimal targets.
       </div>
     </motion.div>
   );

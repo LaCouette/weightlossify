@@ -8,36 +8,34 @@ interface ProfileHeaderProps {
   error: string | null;
 }
 
-export function ProfileHeader({ 
-  isResetting, 
-  onRestartSetup,
-  error 
-}: ProfileHeaderProps) {
+export function ProfileHeader({ isResetting, onRestartSetup, error }: ProfileHeaderProps) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-2xl p-6 shadow-lg transition-all duration-300 hover:shadow-xl"
+      className="card"
     >
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-indigo-200 to-purple-300 rounded-xl shadow-md">
-            <User className="h-5 w-5 text-indigo-700" />
-          </div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 text-transparent bg-clip-text">
-            Profile
-          </h1>
+      <div className="section-header">
+        <div className="section-icon">
+          <User className="h-6 w-6 text-indigo-600" />
         </div>
+        <h1 className="section-title text-shadow">Profile Settings</h1>
+        <p className="section-description">
+          Manage your personal information and preferences
+        </p>
+      </div>
+
+      <div className="flex justify-center">
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={onRestartSetup}
           disabled={isResetting}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-100 to-purple-200 text-indigo-700 rounded-lg shadow-md shadow-purple-100/50 transition-all duration-300 hover:shadow-lg disabled:opacity-50"
+          className="btn btn-secondary"
         >
-          <RefreshCw className="h-4 w-4" />
-          <span>{isResetting ? 'Restarting...' : 'Restart Setup'}</span>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          <span>{isResetting ? 'Restarting...' : 'Restart Setup Wizard'}</span>
         </motion.button>
       </div>
 
@@ -45,7 +43,7 @@ export function ProfileHeader({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-4 p-4 bg-red-50 border border-red-100 rounded-xl shadow-sm"
+          className="mt-6 p-4 bg-red-50 border border-red-100 rounded-lg shadow-sm"
         >
           <p className="text-sm text-red-600">{error}</p>
         </motion.div>
