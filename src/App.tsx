@@ -5,6 +5,7 @@ import { Dashboard } from './components/Dashboard';
 import { AuthPage } from './components/auth/AuthPage';
 import { ProfileSetup } from './components/profile/ProfileSetup';
 import { Profile } from './components/profile/Profile';
+import { LogsHistory } from './components/LogsHistory';
 import { PrivateRoute } from './components/auth/PrivateRoute';
 
 export function App() {
@@ -29,6 +30,19 @@ export function App() {
                   <Header />
                   <main className="container mx-auto px-4 py-8">
                     <Profile />
+                  </main>
+                </>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/logs"
+            element={
+              <PrivateRoute>
+                <>
+                  <Header />
+                  <main className="container mx-auto px-4 py-8">
+                    <LogsHistory />
                   </main>
                 </>
               </PrivateRoute>
