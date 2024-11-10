@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserStore } from '../../stores/userStore';
-import { calculateFullProfile, calculateMacros } from '../../utils/profileCalculations';
 import { FormData } from '../../types/profile';
 import { Step1 } from './steps/Step1';
 import { Step2 } from './steps/Step2';
@@ -12,7 +11,7 @@ import { Step5 } from './steps/Step5';
 
 export function ProfileSetup() {
   const { user } = useAuthStore();
-  const { addProfile } = useUserStore();
+  const { profile, addProfile } = useUserStore();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
@@ -21,58 +20,34 @@ export function ProfileSetup() {
     age: 0,
     height: 0,
     currentWeight: 0,
+    bodyFat: 0,
     activityLevel: '',
     primaryGoal: '',
-    secondaryGoal: '',
-    dailyStepGoal: 0,
-    dailyCalorieTarget: 0,
-    proteinPercentage: 0,
-    carbsPercentage: 0,
-    fatsPercentage: 0
+    targetWeight: 0,
+    weeklyWeightGoal: '',
+    dailyStepsGoal: 0,
+    dailyCaloriesTarget: 0
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect if profile setup is already completed
+  useEffect(() => {
+    if (profile?.setupCompleted) {
+      navigate('/');
+    }
+  }, [profile, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
-    }));
-  };
-
-  const calculateRecommendations = () => {
-    const calculations = calculateFullProfile({
-      gender: formData.gender,
-      age: Number(formData.age),
-      height: Number(formData.height),
-      currentWeight: Number(formData.currentWeight),
-      targetWeight: formData.targetWeight ? Number(formData.targetWeight) : undefined,
-      weeklyWeightGoal: formData.weeklyWeightGoal ? Number(formData.weeklyWeightGoal) : undefined,
-      activityLevel: formData.activityLevel,
-      primaryGoal: formData.primaryGoal
-    });
-
-    const macros = calculateMacros(
-      calculations.netCalorieTarget,
-      formData.primaryGoal,
-      formData.secondaryGoal
-    );
-
-    setFormData(prev => ({
-      ...prev,
-      dailyStepGoal: calculations.requiredSteps,
-      dailyCalorieTarget: calculations.netCalorieTarget,
-      proteinPercentage: macros.protein,
-      carbsPercentage: macros.carbs,
-      fatsPercentage: macros.fats
+      [name]: ['age', 'height', 'currentWeight', 'targetWeight', 'dailyStepsGoal', 'dailyCaloriesTarget', 'bodyFat']
+        .includes(name) ? Number(value) : value
     }));
   };
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-    if (step === 3) {
-      calculateRecommendations();
-    }
     setStep(prev => prev + 1);
   };
 

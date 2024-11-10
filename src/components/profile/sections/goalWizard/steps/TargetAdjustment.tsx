@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Scale, Target } from 'lucide-react';
-import { FormData } from '../../../types/profile';
-import { MaintenanceCard } from './MaintenanceCard';
+import { Activity, Scale } from 'lucide-react';
+import { UserProfile } from '../../../../../types/profile';
 import {
   calculateBMR,
   calculateBaseMaintenance,
@@ -11,24 +10,24 @@ import {
   getInitialRecommendation,
   MAX_STEPS,
   CALORIES_PER_STEP
-} from '../../../utils/calorieCalculations';
-import { roundSteps, roundCalories } from '../../../utils/roundingRules';
+} from '../../../../../utils/calorieCalculations';
+import { roundSteps, roundCalories } from '../../../../../utils/roundingRules';
 
-interface Step5Props {
-  formData: FormData;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+interface TargetAdjustmentProps {
+  profile: UserProfile;
+  onChange: (updates: Partial<UserProfile>) => void;
 }
 
-export function Step5({ formData, onChange }: Step5Props) {
-  const isGain = formData.primaryGoal === 'muscle_gain';
-  const isMaintenance = formData.primaryGoal === 'maintenance';
+export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
+  const isGain = profile.primaryGoal === 'muscle_gain';
+  const isMaintenance = profile.primaryGoal === 'maintenance';
   
   const bmr = calculateBMR(
-    Number(formData.currentWeight),
-    Number(formData.height),
-    Number(formData.age),
-    formData.gender,
-    Number(formData.bodyFat)
+    profile.currentWeight,
+    profile.height,
+    profile.age,
+    profile.gender,
+    profile.bodyFat
   );
   
   const baseMaintenance = calculateBaseMaintenance(bmr);
@@ -37,40 +36,32 @@ export function Step5({ formData, onChange }: Step5Props) {
   const targetChange = (() => {
     if (isMaintenance) return 0;
     if (isGain) return Math.round(baseMaintenance * 0.075);
-    return formData.weeklyWeightGoal === '0.35' ? -350 : -600;
+    return profile.weeklyWeightGoal === '0.35' ? -350 : -600;
   })();
 
   const maxCalories = roundCalories(
     Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 1.3 : 1.5)),
-    formData.primaryGoal
+    profile.primaryGoal
   );
   const minCalories = roundCalories(
     Math.round(baseMaintenance * (isGain ? 1.1 : isMaintenance ? 0.9 : 0.5)),
-    formData.primaryGoal
+    profile.primaryGoal
   );
 
   // Get initial balanced recommendation
   const initialReco = getInitialRecommendation(baseMaintenance, targetChange, isGain);
 
-  // Initialize values with recommendations
-  useEffect(() => {
-    // Update form data with calculated targets
-    onChange({
-      target: { name: 'dailyStepsGoal', value: roundSteps(initialReco.steps).toString() }
-    } as React.ChangeEvent<HTMLInputElement>);
-
-    onChange({
-      target: { 
-        name: 'dailyCaloriesTarget', 
-        value: roundCalories(initialReco.calories, formData.primaryGoal).toString() 
-      }
-    } as React.ChangeEvent<HTMLInputElement>);
-  }, [formData.primaryGoal, formData.weeklyWeightGoal]);
-
   const [values, setValues] = useState({
-    targetCalories: roundCalories(initialReco.calories, formData.primaryGoal),
-    targetSteps: roundSteps(initialReco.steps)
+    targetCalories: initialReco.calories,
+    targetSteps: initialReco.steps
   });
+
+  useEffect(() => {
+    onChange({
+      dailyCaloriesTarget: values.targetCalories,
+      dailyStepsGoal: values.targetSteps
+    });
+  }, [values.targetCalories, values.targetSteps]);
 
   const neat = calculateNEAT(values.targetSteps);
   const totalMaintenance = baseMaintenance + neat;
@@ -79,7 +70,7 @@ export function Step5({ formData, onChange }: Step5Props) {
   const handleCaloriesChange = (newCalories: number) => {
     const clampedCalories = roundCalories(
       Math.min(Math.max(newCalories, minCalories), maxCalories),
-      formData.primaryGoal
+      profile.primaryGoal
     );
     
     const requiredSteps = calculateRequiredSteps(
@@ -93,21 +84,6 @@ export function Step5({ formData, onChange }: Step5Props) {
       targetCalories: clampedCalories,
       targetSteps: clampedSteps
     });
-
-    // Update form data
-    onChange({
-      target: { 
-        name: 'dailyCaloriesTarget', 
-        value: clampedCalories.toString() 
-      }
-    } as React.ChangeEvent<HTMLInputElement>);
-
-    onChange({
-      target: { 
-        name: 'dailyStepsGoal', 
-        value: clampedSteps.toString() 
-      }
-    } as React.ChangeEvent<HTMLInputElement>);
   };
 
   const handleStepsChange = (newSteps: number) => {
@@ -117,53 +93,24 @@ export function Step5({ formData, onChange }: Step5Props) {
     const newCalories = calculateTargetCalories(
       newTotalMaintenance,
       targetChange,
-      formData.primaryGoal
+      profile.primaryGoal
     );
-    const clampedCalories = roundCalories(
-      Math.min(Math.max(newCalories, minCalories), maxCalories),
-      formData.primaryGoal
-    );
+    const clampedCalories = Math.min(Math.max(newCalories, minCalories), maxCalories);
 
     setValues({
       targetCalories: clampedCalories,
       targetSteps: clampedSteps
     });
-
-    // Update form data
-    onChange({
-      target: { 
-        name: 'dailyCaloriesTarget', 
-        value: clampedCalories.toString() 
-      }
-    } as React.ChangeEvent<HTMLInputElement>);
-
-    onChange({
-      target: { 
-        name: 'dailyStepsGoal', 
-        value: clampedSteps.toString() 
-      }
-    } as React.ChangeEvent<HTMLInputElement>);
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 px-4 sm:px-6">
-      <div className="text-center space-y-4">
-        <h2 className="text-2xl font-bold text-gray-900">Your Personalized Plan</h2>
-        {!isMaintenance && (
-          <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full">
-            <Target className="h-5 w-5 text-purple-600 mr-2" />
-            <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 text-transparent bg-clip-text">
-              Target {isGain ? 'Surplus' : 'Deficit'}: {Math.abs(targetChange)} calories/day
-            </span>
-          </div>
-        )}
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <h3 className="text-lg font-semibold">Adjust Your Daily Targets</h3>
+        <p className="text-sm text-gray-600">
+          Fine-tune your daily calorie and step goals to match your preferences
+        </p>
       </div>
-
-      <MaintenanceCard
-        baseMaintenance={baseMaintenance}
-        neat={neat}
-        total={totalMaintenance}
-      />
 
       {/* Calories Slider */}
       <div className="bg-white rounded-xl p-6 border border-gray-200">
@@ -239,29 +186,10 @@ export function Step5({ formData, onChange }: Step5Props) {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm">
-        <div className="text-center space-y-2">
-          <div className="font-medium text-gray-900">Daily Target Summary</div>
-          {isMaintenance ? (
-            <>
-              <div className="text-2xl font-bold text-purple-600">
-                Maintenance Mode
-              </div>
-              <div className="text-sm text-gray-600">
-                Focus on maintaining your current weight while improving body composition through proper nutrition and exercise.
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="text-2xl font-bold text-purple-600">
-                {Math.abs(currentChange)} cal {isGain ? 'surplus' : 'deficit'}
-              </div>
-              <div className="text-sm text-gray-600">
-                Following these targets should result in approximately {(Math.abs(currentChange) * 7 / 7700).toFixed(2)}kg of {isGain ? 'weight gain' : 'weight loss'} per week
-              </div>
-            </>
-          )}
-        </div>
+      <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
+        <strong>Note:</strong> These targets are optimized for your selected goal of{' '}
+        {isGain ? 'muscle gain' : isMaintenance ? 'maintenance' : 'weight loss'}.
+        Adjust them based on your preferences and energy levels.
       </div>
     </div>
   );

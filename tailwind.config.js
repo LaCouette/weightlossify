@@ -4,19 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
-          950: '#2e1065',
-        },
+        indigo: {
+          50: '#f5f7ff',
+          100: '#ebf0ff',
+          200: '#d6e0ff',
+          300: '#adc1ff',
+          400: '#839dff',
+          500: '#5b78ff',
+          600: '#3b4edb',
+          700: '#2f3eb3',
+          800: '#232e8a',
+          900: '#1a2362',
+        }
+      },
+      boxShadow: {
+        'inner': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',
