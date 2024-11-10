@@ -91,40 +91,6 @@ export function DailyTargets({
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end space-x-3">
-        {!isEditing ? (
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onEdit} 
-            className="btn btn-secondary"
-          >
-            Edit Targets
-          </motion.button>
-        ) : (
-          <>
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={onCancel} 
-              disabled={isLoading}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={onSave}
-              disabled={isLoading}
-              className="btn btn-primary"
-            >
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </motion.button>
-          </>
-        )}
-      </div>
-
       <div className="info-box mt-8">
         <strong>Note:</strong> These targets are automatically adjusted based on your selected goal 
         and activity level. Adjust them if needed, based on your progress and energy levels.

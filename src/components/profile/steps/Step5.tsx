@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Activity, Scale, Target } from 'lucide-react';
 import { FormData } from '../../../types/profile';
-import { Target, Activity, Scale } from 'lucide-react';
 import { MaintenanceCard } from './MaintenanceCard';
 import {
   calculateBMR,
@@ -12,6 +12,7 @@ import {
   MAX_STEPS,
   CALORIES_PER_STEP
 } from '../../../utils/calorieCalculations';
+import { roundSteps, roundCalories } from '../../../utils/roundingRules';
 
 interface Step5Props {
   formData: FormData;
@@ -34,21 +35,19 @@ export function Step5({ formData, onChange }: Step5Props) {
   
   // Calculate target change based on selected goal
   const targetChange = (() => {
-    if (isMaintenance) {
-      return 0; // No deficit/surplus for maintenance
-    }
-    if (isGain) {
-      // Calculate 7.5% surplus for muscle gain
-      return Math.round(baseMaintenance * 0.075);
-    }
-    // Use exact deficit from selected plan in Step3
-    return formData.weeklyWeightGoal === '0.35' ? -350 : // moderate loss
-           formData.weeklyWeightGoal === '0.6' ? -600 : // aggressive loss
-           0; // default to maintenance
+    if (isMaintenance) return 0;
+    if (isGain) return Math.round(baseMaintenance * 0.075);
+    return formData.weeklyWeightGoal === '0.35' ? -350 : -600;
   })();
 
-  const maxCalories = Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 1.3 : 1.5));
-  const minCalories = Math.round(baseMaintenance * (isGain ? 1.1 : isMaintenance ? 0.9 : 0.5));
+  const maxCalories = roundCalories(
+    Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 1.3 : 1.5)),
+    formData.primaryGoal
+  );
+  const minCalories = roundCalories(
+    Math.round(baseMaintenance * (isGain ? 1.1 : isMaintenance ? 0.9 : 0.5)),
+    formData.primaryGoal
+  );
 
   // Get initial balanced recommendation
   const initialReco = getInitialRecommendation(baseMaintenance, targetChange, isGain);
@@ -57,17 +56,20 @@ export function Step5({ formData, onChange }: Step5Props) {
   useEffect(() => {
     // Update form data with calculated targets
     onChange({
-      target: { name: 'dailyStepsGoal', value: initialReco.steps.toString() }
+      target: { name: 'dailyStepsGoal', value: roundSteps(initialReco.steps).toString() }
     } as React.ChangeEvent<HTMLInputElement>);
 
     onChange({
-      target: { name: 'dailyCaloriesTarget', value: initialReco.calories.toString() }
+      target: { 
+        name: 'dailyCaloriesTarget', 
+        value: roundCalories(initialReco.calories, formData.primaryGoal).toString() 
+      }
     } as React.ChangeEvent<HTMLInputElement>);
   }, [formData.primaryGoal, formData.weeklyWeightGoal]);
 
   const [values, setValues] = useState({
-    targetCalories: initialReco.calories,
-    targetSteps: initialReco.steps
+    targetCalories: roundCalories(initialReco.calories, formData.primaryGoal),
+    targetSteps: roundSteps(initialReco.steps)
   });
 
   const neat = calculateNEAT(values.targetSteps);
@@ -75,115 +77,72 @@ export function Step5({ formData, onChange }: Step5Props) {
   const currentChange = values.targetCalories - totalMaintenance;
 
   const handleCaloriesChange = (newCalories: number) => {
-    const clampedCalories = Math.min(Math.max(newCalories, minCalories), maxCalories);
+    const clampedCalories = roundCalories(
+      Math.min(Math.max(newCalories, minCalories), maxCalories),
+      formData.primaryGoal
+    );
+    
     const requiredSteps = calculateRequiredSteps(
       clampedCalories,
       baseMaintenance,
       targetChange
     );
-    const clampedSteps = Math.min(Math.max(requiredSteps, 0), MAX_STEPS);
+    const clampedSteps = roundSteps(Math.min(Math.max(requiredSteps, 0), MAX_STEPS));
 
-    if (requiredSteps !== clampedSteps) {
-      const newNeat = calculateNEAT(clampedSteps);
-      const newTotalMaintenance = baseMaintenance + newNeat;
-      const recalculatedCalories = calculateTargetCalories(newTotalMaintenance, targetChange);
-      
-      setValues({
-        targetCalories: Math.min(Math.max(recalculatedCalories, minCalories), maxCalories),
-        targetSteps: clampedSteps
-      });
+    setValues({
+      targetCalories: clampedCalories,
+      targetSteps: clampedSteps
+    });
 
-      // Update form data
-      onChange({
-        target: { 
-          name: 'dailyCaloriesTarget', 
-          value: Math.min(Math.max(recalculatedCalories, minCalories), maxCalories).toString() 
-        }
-      } as React.ChangeEvent<HTMLInputElement>);
+    // Update form data
+    onChange({
+      target: { 
+        name: 'dailyCaloriesTarget', 
+        value: clampedCalories.toString() 
+      }
+    } as React.ChangeEvent<HTMLInputElement>);
 
-      onChange({
-        target: { 
-          name: 'dailyStepsGoal', 
-          value: clampedSteps.toString() 
-        }
-      } as React.ChangeEvent<HTMLInputElement>);
-    } else {
-      setValues({
-        targetCalories: clampedCalories,
-        targetSteps: clampedSteps
-      });
-
-      // Update form data
-      onChange({
-        target: { 
-          name: 'dailyCaloriesTarget', 
-          value: clampedCalories.toString() 
-        }
-      } as React.ChangeEvent<HTMLInputElement>);
-
-      onChange({
-        target: { 
-          name: 'dailyStepsGoal', 
-          value: clampedSteps.toString() 
-        }
-      } as React.ChangeEvent<HTMLInputElement>);
-    }
+    onChange({
+      target: { 
+        name: 'dailyStepsGoal', 
+        value: clampedSteps.toString() 
+      }
+    } as React.ChangeEvent<HTMLInputElement>);
   };
 
   const handleStepsChange = (newSteps: number) => {
-    const clampedSteps = Math.min(Math.max(newSteps, 0), MAX_STEPS);
+    const clampedSteps = roundSteps(Math.min(Math.max(newSteps, 0), MAX_STEPS));
     const newNeat = calculateNEAT(clampedSteps);
     const newTotalMaintenance = baseMaintenance + newNeat;
-    const newCalories = calculateTargetCalories(newTotalMaintenance, targetChange);
-    const clampedCalories = Math.min(Math.max(newCalories, minCalories), maxCalories);
+    const newCalories = calculateTargetCalories(
+      newTotalMaintenance,
+      targetChange,
+      formData.primaryGoal
+    );
+    const clampedCalories = roundCalories(
+      Math.min(Math.max(newCalories, minCalories), maxCalories),
+      formData.primaryGoal
+    );
 
-    if (newCalories !== clampedCalories) {
-      const requiredSteps = calculateRequiredSteps(
-        clampedCalories,
-        baseMaintenance,
-        targetChange
-      );
-      
-      setValues({
-        targetCalories: clampedCalories,
-        targetSteps: Math.min(Math.max(requiredSteps, 0), MAX_STEPS)
-      });
+    setValues({
+      targetCalories: clampedCalories,
+      targetSteps: clampedSteps
+    });
 
-      // Update form data
-      onChange({
-        target: { 
-          name: 'dailyCaloriesTarget', 
-          value: clampedCalories.toString() 
-        }
-      } as React.ChangeEvent<HTMLInputElement>);
+    // Update form data
+    onChange({
+      target: { 
+        name: 'dailyCaloriesTarget', 
+        value: clampedCalories.toString() 
+      }
+    } as React.ChangeEvent<HTMLInputElement>);
 
-      onChange({
-        target: { 
-          name: 'dailyStepsGoal', 
-          value: Math.min(Math.max(requiredSteps, 0), MAX_STEPS).toString() 
-        }
-      } as React.ChangeEvent<HTMLInputElement>);
-    } else {
-      setValues({
-        targetCalories: clampedCalories,
-        targetSteps: clampedSteps
-      });
-
-      // Update form data
-      onChange({
-        target: { 
-          name: 'dailyCaloriesTarget', 
-          value: clampedCalories.toString() 
-        }
-      } as React.ChangeEvent<HTMLInputElement>);
-
-      onChange({
-        target: { 
-          name: 'dailyStepsGoal', 
-          value: clampedSteps.toString() 
-        }
-      } as React.ChangeEvent<HTMLInputElement>);
-    }
+    onChange({
+      target: { 
+        name: 'dailyStepsGoal', 
+        value: clampedSteps.toString() 
+      }
+    } as React.ChangeEvent<HTMLInputElement>);
   };
 
   return (
@@ -207,12 +166,10 @@ export function Step5({ formData, onChange }: Step5Props) {
       />
 
       {/* Calories Slider */}
-      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="p-2 bg-orange-50 rounded-lg">
-            <Scale className="h-5 w-5 text-orange-600" />
-          </div>
-          <h3 className="font-bold text-gray-900">Daily Calorie Target</h3>
+      <div className="bg-white rounded-xl p-6 border border-gray-200">
+        <div className="flex items-center gap-2 mb-4">
+          <Scale className="h-5 w-5 text-orange-600" />
+          <h3 className="font-medium text-gray-900">Daily Calorie Target</h3>
         </div>
 
         <div className="space-y-6">
@@ -221,6 +178,11 @@ export function Step5({ formData, onChange }: Step5Props) {
               {Math.round(values.targetCalories)}
             </div>
             <div className="text-sm text-gray-500">calories per day</div>
+            {!isMaintenance && (
+              <div className="text-sm text-orange-600 mt-1">
+                ({isGain ? '+' : ''}{Math.round(currentChange)} kcal {isGain ? 'surplus' : 'deficit'})
+              </div>
+            )}
           </div>
 
           <div className="relative pt-6 pb-2">
@@ -231,6 +193,7 @@ export function Step5({ formData, onChange }: Step5Props) {
               value={values.targetCalories}
               onChange={(e) => handleCaloriesChange(Number(e.target.value))}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+              step="50"
             />
             <div className="flex justify-between text-xs text-gray-500 mt-2">
               <span>{minCalories}</span>
@@ -241,12 +204,10 @@ export function Step5({ formData, onChange }: Step5Props) {
       </div>
 
       {/* Steps Slider */}
-      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="p-2 bg-green-50 rounded-lg">
-            <Activity className="h-5 w-5 text-green-600" />
-          </div>
-          <h3 className="font-bold text-gray-900">Daily Steps Target</h3>
+      <div className="bg-white rounded-xl p-6 border border-gray-200">
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="h-5 w-5 text-green-600" />
+          <h3 className="font-medium text-gray-900">Daily Steps Target</h3>
         </div>
 
         <div className="space-y-6">
@@ -255,6 +216,9 @@ export function Step5({ formData, onChange }: Step5Props) {
               {values.targetSteps.toLocaleString()}
             </div>
             <div className="text-sm text-gray-500">steps per day</div>
+            <div className="text-sm text-green-600 mt-1">
+              (+{Math.round(neat)} kcal from activity)
+            </div>
           </div>
 
           <div className="relative pt-6 pb-2">
@@ -265,6 +229,7 @@ export function Step5({ formData, onChange }: Step5Props) {
               value={values.targetSteps}
               onChange={(e) => handleStepsChange(Number(e.target.value))}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+              step="100"
             />
             <div className="flex justify-between text-xs text-gray-500 mt-2">
               <span>0</span>

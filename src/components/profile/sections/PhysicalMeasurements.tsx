@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ruler, Scale, Activity, Percent } from 'lucide-react';
+import { Ruler, Scale, Activity, Percent, Edit2 } from 'lucide-react';
 import { UserProfile } from '../../../types/profile';
 import { motion } from 'framer-motion';
 
@@ -39,28 +39,28 @@ export function PhysicalMeasurements({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-6 max-w-lg mx-auto">
         <div className="input-group">
           <div className="flex items-center gap-2 mb-2">
             <Ruler className="h-4 w-4 text-indigo-500" />
             <label className="input-label">Height</label>
           </div>
-          <div className="relative">
-            <input
-              type="number"
-              name="height"
-              value={profile.height}
-              onChange={onChange}
-              disabled={!isEditing}
-              min="140"
-              max="220"
-              step="0.1"
-              className="input-field pr-16"
-              placeholder="Enter your height"
-            />
-            <div className="input-addon">
-              <span>cm</span>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-[120px]">
+              <input
+                type="number"
+                name="height"
+                value={profile.height}
+                onChange={onChange}
+                disabled={!isEditing}
+                min="140"
+                max="220"
+                step="0.1"
+                className="input-field text-center"
+                placeholder="Height"
+              />
             </div>
+            <span className="text-sm text-gray-600">cm</span>
           </div>
         </div>
 
@@ -69,22 +69,22 @@ export function PhysicalMeasurements({
             <Scale className="h-4 w-4 text-indigo-500" />
             <label className="input-label">Current Weight</label>
           </div>
-          <div className="relative">
-            <input
-              type="number"
-              name="currentWeight"
-              value={profile.currentWeight}
-              onChange={onChange}
-              disabled={!isEditing}
-              min="40"
-              max="200"
-              step="0.1"
-              className="input-field pr-16"
-              placeholder="Enter your weight"
-            />
-            <div className="input-addon">
-              <span>kg</span>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-[120px]">
+              <input
+                type="number"
+                name="currentWeight"
+                value={profile.currentWeight}
+                onChange={onChange}
+                disabled={!isEditing}
+                min="40"
+                max="200"
+                step="0.1"
+                className="input-field text-center"
+                placeholder="Weight"
+              />
             </div>
+            <span className="text-sm text-gray-600">kg</span>
           </div>
         </div>
 
@@ -93,22 +93,22 @@ export function PhysicalMeasurements({
             <Percent className="h-4 w-4 text-indigo-500" />
             <label className="input-label">Body Fat Percentage</label>
           </div>
-          <div className="relative">
-            <input
-              type="number"
-              name="bodyFat"
-              value={profile.bodyFat}
-              onChange={onChange}
-              disabled={!isEditing}
-              min="3"
-              max="50"
-              step="0.1"
-              className="input-field pr-16"
-              placeholder="Enter your body fat %"
-            />
-            <div className="input-addon">
-              <span>%</span>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-[120px]">
+              <input
+                type="number"
+                name="bodyFat"
+                value={profile.bodyFat}
+                onChange={onChange}
+                disabled={!isEditing}
+                min="3"
+                max="50"
+                step="0.1"
+                className="input-field text-center"
+                placeholder="Body Fat"
+              />
             </div>
+            <span className="text-sm text-gray-600">%</span>
           </div>
         </div>
 
@@ -129,40 +129,41 @@ export function PhysicalMeasurements({
             <option value="gym_rat">Intense (6+ workouts/week)</option>
           </select>
         </div>
-      </div>
 
-      <div className="mt-8 flex justify-end space-x-3">
-        {!isEditing ? (
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onEdit} 
-            className="btn btn-secondary"
-          >
-            Edit Measurements
-          </motion.button>
-        ) : (
-          <>
+        <div className="mt-8 flex justify-end space-x-3">
+          {!isEditing ? (
             <motion.button 
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={onCancel} 
-              disabled={isLoading}
+              onClick={onEdit} 
               className="btn btn-secondary"
             >
-              Cancel
+              <Edit2 className="h-4 w-4 mr-2" />
+              Edit Measurements
             </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={onSave}
-              disabled={isLoading}
-              className="btn btn-primary"
-            >
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </motion.button>
-          </>
-        )}
+          ) : (
+            <>
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onCancel} 
+                disabled={isLoading}
+                className="btn btn-ghost"
+              >
+                Cancel
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onSave}
+                disabled={isLoading}
+                className="btn btn-primary"
+              >
+                {isLoading ? 'Saving...' : 'Save Changes'}
+              </motion.button>
+            </>
+          )}
+        </div>
       </div>
     </motion.div>
   );

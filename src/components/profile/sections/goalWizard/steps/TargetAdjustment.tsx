@@ -11,6 +11,7 @@ import {
   MAX_STEPS,
   CALORIES_PER_STEP
 } from '../../../../../utils/calorieCalculations';
+import { roundSteps, roundCalories } from '../../../../../utils/roundingRules';
 
 interface TargetAdjustmentProps {
   profile: UserProfile;
@@ -38,8 +39,14 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
     return profile.weeklyWeightGoal === '0.35' ? -350 : -600;
   })();
 
-  const maxCalories = Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 1.3 : 1.5));
-  const minCalories = Math.round(baseMaintenance * (isGain ? 1.1 : isMaintenance ? 0.9 : 0.5));
+  const maxCalories = roundCalories(
+    Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 1.3 : 1.5)),
+    profile.primaryGoal
+  );
+  const minCalories = roundCalories(
+    Math.round(baseMaintenance * (isGain ? 1.1 : isMaintenance ? 0.9 : 0.5)),
+    profile.primaryGoal
+  );
 
   // Get initial balanced recommendation
   const initialReco = getInitialRecommendation(baseMaintenance, targetChange, isGain);
@@ -61,13 +68,17 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
   const currentChange = values.targetCalories - totalMaintenance;
 
   const handleCaloriesChange = (newCalories: number) => {
-    const clampedCalories = Math.min(Math.max(newCalories, minCalories), maxCalories);
+    const clampedCalories = roundCalories(
+      Math.min(Math.max(newCalories, minCalories), maxCalories),
+      profile.primaryGoal
+    );
+    
     const requiredSteps = calculateRequiredSteps(
       clampedCalories,
       baseMaintenance,
       targetChange
     );
-    const clampedSteps = Math.min(Math.max(requiredSteps, 0), MAX_STEPS);
+    const clampedSteps = roundSteps(Math.min(Math.max(requiredSteps, 0), MAX_STEPS));
 
     setValues({
       targetCalories: clampedCalories,
@@ -76,10 +87,14 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
   };
 
   const handleStepsChange = (newSteps: number) => {
-    const clampedSteps = Math.min(Math.max(newSteps, 0), MAX_STEPS);
+    const clampedSteps = roundSteps(Math.min(Math.max(newSteps, 0), MAX_STEPS));
     const newNeat = calculateNEAT(clampedSteps);
     const newTotalMaintenance = baseMaintenance + newNeat;
-    const newCalories = calculateTargetCalories(newTotalMaintenance, targetChange);
+    const newCalories = calculateTargetCalories(
+      newTotalMaintenance,
+      targetChange,
+      profile.primaryGoal
+    );
     const clampedCalories = Math.min(Math.max(newCalories, minCalories), maxCalories);
 
     setValues({
@@ -125,6 +140,7 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
               value={values.targetCalories}
               onChange={(e) => handleCaloriesChange(Number(e.target.value))}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+              step="50"
             />
             <div className="flex justify-between text-xs text-gray-500 mt-2">
               <span>{minCalories}</span>
@@ -160,6 +176,7 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
               value={values.targetSteps}
               onChange={(e) => handleStepsChange(Number(e.target.value))}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+              step="100"
             />
             <div className="flex justify-between text-xs text-gray-500 mt-2">
               <span>0</span>

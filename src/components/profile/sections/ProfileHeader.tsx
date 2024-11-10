@@ -32,9 +32,9 @@ export function ProfileHeader({ isResetting, onRestartSetup, error }: ProfileHea
           whileTap={{ scale: 0.98 }}
           onClick={onRestartSetup}
           disabled={isResetting}
-          className="btn btn-secondary"
+          className="btn btn-warning"
         >
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className={`h-4 w-4 mr-2 ${isResetting ? 'animate-spin' : ''}`} />
           <span>{isResetting ? 'Restarting...' : 'Restart Setup Wizard'}</span>
         </motion.button>
       </div>

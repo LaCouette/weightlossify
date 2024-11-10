@@ -4,6 +4,8 @@ export const CALORIES_PER_STEP = 0.045;
 export const MAX_STEPS = 40000;
 export const MIN_STEPS = 0;
 
+import { roundSteps, roundCalories } from './roundingRules';
+
 // Workout calories based on height ranges
 export const WORKOUT_CALORIES: { [key: string]: number } = {
   '150-160': 150,
@@ -76,14 +78,15 @@ export function calculateRequiredSteps(
   targetChange: number
 ): number {
   const requiredNEAT = targetCalories - targetChange - baseMaintenance;
-  return Math.round(requiredNEAT / CALORIES_PER_STEP);
+  return roundSteps(Math.round(requiredNEAT / CALORIES_PER_STEP));
 }
 
 export function calculateTargetCalories(
   totalMaintenance: number,
-  targetChange: number
+  targetChange: number,
+  goal: 'weight_loss' | 'muscle_gain' | 'maintenance'
 ): number {
-  return Math.round(totalMaintenance + targetChange);
+  return roundCalories(Math.round(totalMaintenance + targetChange), goal);
 }
 
 export function getInitialRecommendation(
@@ -100,12 +103,16 @@ export function getInitialRecommendation(
   // Calculate initial steps
   const baseSteps = isGain ? 7500 : 10000; // Lower base steps for muscle gain
   const additionalSteps = Math.round(Math.abs(activityChange) / CALORIES_PER_STEP);
-  const requiredSteps = baseSteps + (isGain ? -additionalSteps : additionalSteps);
+  const requiredSteps = roundSteps(baseSteps + (isGain ? -additionalSteps : additionalSteps));
 
   // Calculate initial calorie target
   const neat = calculateNEAT(requiredSteps);
   const totalMaintenance = baseMaintenance + neat;
-  const targetCalories = calculateTargetCalories(totalMaintenance, targetChange);
+  const targetCalories = calculateTargetCalories(
+    totalMaintenance, 
+    targetChange,
+    isGain ? 'muscle_gain' : 'weight_loss'
+  );
 
   return {
     calories: targetCalories,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from 'lucide-react';
+import { User, Edit2 } from 'lucide-react';
 import { UserProfile } from '../../../types/profile';
 import { motion } from 'framer-motion';
 
@@ -39,7 +39,7 @@ export function BasicInformation({
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-lg mx-auto">
         <div className="input-group">
           <label className="input-label">Full Name</label>
           <input
@@ -69,21 +69,21 @@ export function BasicInformation({
 
         <div className="input-group">
           <label className="input-label">Age</label>
-          <div className="relative">
-            <input
-              type="number"
-              name="age"
-              value={profile.age}
-              onChange={onChange}
-              disabled={!isEditing}
-              min="13"
-              max="120"
-              className="input-field pr-16"
-              placeholder="Enter your age"
-            />
-            <div className="input-addon">
-              <span>years</span>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-[120px]">
+              <input
+                type="number"
+                name="age"
+                value={profile.age}
+                onChange={onChange}
+                disabled={!isEditing}
+                min="13"
+                max="120"
+                className="input-field text-center"
+                placeholder="Age"
+              />
             </div>
+            <span className="text-sm text-gray-600">years</span>
           </div>
         </div>
 
@@ -95,6 +95,7 @@ export function BasicInformation({
               onClick={onEdit} 
               className="btn btn-secondary"
             >
+              <Edit2 className="h-4 w-4 mr-2" />
               Edit Information
             </motion.button>
           ) : (
@@ -104,7 +105,7 @@ export function BasicInformation({
                 whileTap={{ scale: 0.98 }}
                 onClick={onCancel} 
                 disabled={isLoading}
-                className="btn btn-secondary"
+                className="btn btn-ghost"
               >
                 Cancel
               </motion.button>
