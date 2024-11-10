@@ -15,6 +15,7 @@ export function ProfileSetup() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
+    email: user?.email || '',
     name: '',
     gender: '',
     age: 0,
@@ -29,6 +30,13 @@ export function ProfileSetup() {
     dailyCaloriesTarget: 0
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update email if user changes
+  useEffect(() => {
+    if (user?.email) {
+      setFormData(prev => ({ ...prev, email: user.email || '' }));
+    }
+  }, [user?.email]);
 
   // Redirect if profile setup is already completed
   useEffect(() => {

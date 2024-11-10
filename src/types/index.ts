@@ -22,3 +22,22 @@ export interface UserProfile {
   updatedAt: Date;
   setupCompleted: boolean;
 }
+
+export interface DailyLog {
+  id: string;
+  date: string;
+  weight?: number;
+  calories?: number;
+  steps?: number;
+  sleep?: {
+    duration: number;
+    quality: number;
+  };
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export interface DateRange {
+  startDate: Date;
+  endDate: Date;
+}

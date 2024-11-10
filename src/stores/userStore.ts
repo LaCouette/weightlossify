@@ -51,7 +51,7 @@ export const useUserStore = create<UserState>((set) => ({
       set({ profile });
     } catch (error) {
       set({ error: (error as Error).message });
-      throw error; // Re-throw to handle in the component
+      throw error;
     } finally {
       set({ isLoading: false });
     }
