@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, LogOut, User, Menu, X, Calendar } from 'lucide-react';
+import { Activity, LogOut, User, Menu, X, Calendar, Calculator } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 
@@ -19,6 +19,7 @@ export function Header() {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: null },
     { path: '/logs', label: 'Logs History', icon: Calendar },
+    { path: '/calculator', label: 'TDEE Calculator', icon: Calculator },
     { path: '/profile', label: 'Profile', icon: User },
   ];
 

@@ -1,10 +1,8 @@
 // Constants
 export const CALORIES_PER_KG = 7700;
 export const CALORIES_PER_STEP = 0.045;
-export const MAX_STEPS = 40000;
+export const MAX_STEPS = 50000;
 export const MIN_STEPS = 0;
-
-import { roundSteps, roundCalories } from './roundingRules';
 
 // Workout calories based on height ranges
 export const WORKOUT_CALORIES: { [key: string]: number } = {
@@ -17,10 +15,22 @@ export const WORKOUT_CALORIES: { [key: string]: number } = {
 
 // Weekly workouts by activity level
 export const WEEKLY_WORKOUTS: { [key: string]: number } = {
-  'light': 1.5, // average of 1-2 workouts
-  'gym_bro': 4, // average of 3-5 workouts
-  'gym_rat': 6.5 // average of 6-7 workouts
+  'light': 1.5,
+  'gym_bro': 4,
+  'gym_rat': 6.5
 };
+
+export function roundSteps(steps: number): number {
+  return Math.ceil(steps / 100) * 100;
+}
+
+export function roundCalories(calories: number, goal: 'weight_loss' | 'muscle_gain' | 'maintenance'): number {
+  const roundTo = 50;
+  if (goal === 'muscle_gain') {
+    return Math.ceil(calories / roundTo) * roundTo;
+  }
+  return Math.floor(calories / roundTo) * roundTo;
+}
 
 // Get calories burned per workout based on height
 export function getWorkoutCalories(height: number): number {
@@ -28,7 +38,7 @@ export function getWorkoutCalories(height: number): number {
   if (height > 200) return 250;
   
   const range = `${Math.floor(height / 10) * 10}-${Math.floor(height / 10) * 10 + 10}`;
-  return WORKOUT_CALORIES[range] || 200; // default to 200 if range not found
+  return WORKOUT_CALORIES[range] || 200;
 }
 
 // Calculate weekly calories from workouts
@@ -66,10 +76,9 @@ export function calculateNEAT(steps: number): number {
 }
 
 export function calculateDailySurplusOrDeficit(weeklyWeightGoal: number, isGain: boolean): number {
-  // For muscle gain, we use monthly goals, so convert weekly values
   const weeklyChange = isGain ? (weeklyWeightGoal / 4) : weeklyWeightGoal;
   const dailyChange = Math.round((weeklyChange * CALORIES_PER_KG) / 7);
-  return isGain ? dailyChange : -dailyChange; // Positive for surplus, negative for deficit
+  return isGain ? dailyChange : -dailyChange;
 }
 
 export function calculateRequiredSteps(
@@ -94,18 +103,14 @@ export function getInitialRecommendation(
   targetChange: number,
   isGain: boolean
 ) {
-  // For muscle gain, we want more calories and moderate activity
-  // For weight loss, we want a balanced approach between diet and activity
-  const activityRatio = isGain ? 0.2 : 0.3; // 20% from activity for gains, 30% for loss
+  const activityRatio = isGain ? 0.2 : 0.3;
   const dietaryChange = Math.round(targetChange * (1 - activityRatio));
   const activityChange = targetChange - dietaryChange;
 
-  // Calculate initial steps
-  const baseSteps = isGain ? 7500 : 10000; // Lower base steps for muscle gain
+  const baseSteps = isGain ? 7500 : 10000;
   const additionalSteps = Math.round(Math.abs(activityChange) / CALORIES_PER_STEP);
   const requiredSteps = roundSteps(baseSteps + (isGain ? -additionalSteps : additionalSteps));
 
-  // Calculate initial calorie target
   const neat = calculateNEAT(requiredSteps);
   const totalMaintenance = baseMaintenance + neat;
   const targetCalories = calculateTargetCalories(

@@ -6,6 +6,7 @@ import { AuthPage } from './components/auth/AuthPage';
 import { ProfileSetup } from './components/profile/ProfileSetup';
 import { Profile } from './components/profile/Profile';
 import { LogsHistory } from './components/LogsHistory';
+import { Calculator } from './components/Calculator';
 import { PrivateRoute } from './components/auth/PrivateRoute';
 import { useInitializeWeight } from './hooks/useInitializeWeight';
 
@@ -47,6 +48,19 @@ export function App() {
                   <Header />
                   <main className="container mx-auto px-4 py-8">
                     <LogsHistory />
+                  </main>
+                </>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/calculator"
+            element={
+              <PrivateRoute>
+                <>
+                  <Header />
+                  <main className="container mx-auto px-4 py-8">
+                    <Calculator />
                   </main>
                 </>
               </PrivateRoute>
