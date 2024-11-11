@@ -17,6 +17,7 @@ export function LogsHistory() {
   const [editValues, setEditValues] = useState<Partial<DailyLog>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLogs, setSelectedLogs] = useState<Set<string>>(new Set());
+  const [isAllPagesSelected, setIsAllPagesSelected] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'date', direction: 'desc' });
 
   const loadLogs = async () => {
@@ -108,6 +109,7 @@ export function LogsHistory() {
 
     try {
       await deleteLog(user.uid, logId);
+      setSelectedLogs(new Set([...selectedLogs].filter(id => id !== logId)));
     } catch (error) {
       console.error('Failed to delete log:', error);
     }
@@ -116,19 +118,29 @@ export function LogsHistory() {
   const handleBulkDelete = async () => {
     if (!user?.uid || selectedLogs.size === 0) return;
 
-    if (!window.confirm(`Are you sure you want to delete ${selectedLogs.size} selected logs? This action cannot be undone.`)) {
+    const message = isAllPagesSelected
+      ? `Are you sure you want to delete all ${logs.length} logs? This action cannot be undone.`
+      : `Are you sure you want to delete ${selectedLogs.size} selected logs? This action cannot be undone.`;
+
+    if (!window.confirm(message)) {
       return;
     }
 
     try {
-      await bulkDeleteLogs(user.uid, Array.from(selectedLogs));
+      const logsToDelete = isAllPagesSelected
+        ? logs.map(log => log.id)
+        : Array.from(selectedLogs);
+        
+      await bulkDeleteLogs(user.uid, logsToDelete);
       setSelectedLogs(new Set());
+      setIsAllPagesSelected(false);
     } catch (error) {
       console.error('Failed to delete logs:', error);
     }
   };
 
   const toggleLogSelection = (logId: string) => {
+    setIsAllPagesSelected(false);
     const newSelection = new Set(selectedLogs);
     if (newSelection.has(logId)) {
       newSelection.delete(logId);
@@ -139,10 +151,30 @@ export function LogsHistory() {
   };
 
   const toggleAllSelection = () => {
+    setIsAllPagesSelected(false);
     if (selectedLogs.size === currentLogs.length) {
-      setSelectedLogs(new Set());
+      // Deselect all on current page
+      const newSelection = new Set([...selectedLogs].filter(id => 
+        !currentLogs.find(log => log.id === id)
+      ));
+      setSelectedLogs(newSelection);
     } else {
-      setSelectedLogs(new Set(currentLogs.map(log => log.id)));
+      // Select all on current page
+      const newSelection = new Set([
+        ...selectedLogs,
+        ...currentLogs.map(log => log.id)
+      ]);
+      setSelectedLogs(newSelection);
+    }
+  };
+
+  const toggleSelectAllPages = () => {
+    if (isAllPagesSelected) {
+      setSelectedLogs(new Set());
+      setIsAllPagesSelected(false);
+    } else {
+      setSelectedLogs(new Set(logs.map(log => log.id)));
+      setIsAllPagesSelected(true);
     }
   };
 
@@ -157,7 +189,7 @@ export function LogsHistory() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <LogsHeader
-        selectedCount={selectedLogs.size}
+        selectedCount={isAllPagesSelected ? logs.length : selectedLogs.size}
         onBulkDelete={handleBulkDelete}
         onImportComplete={loadLogs}
       />
@@ -169,7 +201,12 @@ export function LogsHistory() {
               sortConfig={sortConfig}
               onSort={handleSort}
               onToggleSelectAll={toggleAllSelection}
-              allSelected={selectedLogs.size === currentLogs.length}
+              onToggleSelectAllPages={toggleSelectAllPages}
+              allSelected={currentLogs.every(log => selectedLogs.has(log.id))}
+              someSelected={currentLogs.some(log => selectedLogs.has(log.id))}
+              isAllPagesSelected={isAllPagesSelected}
+              totalLogs={logs.length}
+              selectedCount={selectedLogs.size}
             />
             <tbody className="bg-white divide-y divide-gray-200">
               {currentLogs.map((log) => (
