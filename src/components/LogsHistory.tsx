@@ -84,7 +84,7 @@ export function LogsHistory() {
       setEditingLog(null);
       setEditValues({});
     } catch (error) {
-      console.error('Failed to update log:', error);
+      console.error('Faile to update log:', error);
     }
   };
 
