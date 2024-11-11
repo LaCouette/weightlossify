@@ -1,7 +1,8 @@
 import React from 'react';
-import { User, Edit2 } from 'lucide-react';
+import { User, Edit2, Mail } from 'lucide-react';
 import { UserProfile } from '../../../types/profile';
 import { motion } from 'framer-motion';
+import { useAuthStore } from '../../../stores/authStore';
 
 interface BasicInformationProps {
   profile: UserProfile;
@@ -22,6 +23,8 @@ export function BasicInformation({
   onCancel,
   onEdit
 }: BasicInformationProps) {
+  const { user } = useAuthStore();
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -40,6 +43,22 @@ export function BasicInformation({
       </div>
 
       <div className="space-y-6 max-w-lg mx-auto">
+        {/* Email Display */}
+        <div className="input-group">
+          <div className="flex items-center gap-2 mb-2">
+            <Mail className="h-4 w-4 text-indigo-500" />
+            <label className="input-label">Email Address</label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="email"
+              value={user?.email || ''}
+              disabled
+              className="input-field bg-gray-50 text-gray-600"
+            />
+          </div>
+        </div>
+
         <div className="input-group">
           <label className="input-label">Full Name</label>
           <input
