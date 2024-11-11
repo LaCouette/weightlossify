@@ -7,8 +7,12 @@ import { ProfileSetup } from './components/profile/ProfileSetup';
 import { Profile } from './components/profile/Profile';
 import { LogsHistory } from './components/LogsHistory';
 import { PrivateRoute } from './components/auth/PrivateRoute';
+import { useInitializeWeight } from './hooks/useInitializeWeight';
 
 export function App() {
+  // Initialize weight state
+  useInitializeWeight();
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">

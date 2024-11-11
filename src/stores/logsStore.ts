@@ -8,7 +8,6 @@ import {
   deleteDoc,
   query,
   orderBy,
-  limit,
   writeBatch,
   where,
   Timestamp
@@ -36,7 +35,7 @@ export const useLogsStore = create<LogsState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const logsRef = collection(db, `users/${userId}/logs`);
-      const q = query(logsRef, orderBy('date', 'desc'), limit(100));
+      const q = query(logsRef, orderBy('date', 'desc')); // Removed limit(100)
       const querySnapshot = await getDocs(q);
       
       const logs = querySnapshot.docs.map(doc => {

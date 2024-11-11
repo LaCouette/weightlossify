@@ -19,6 +19,21 @@ export function LogsHistory() {
   const [selectedLogs, setSelectedLogs] = useState<Set<string>>(new Set());
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'date', direction: 'desc' });
 
+  const loadLogs = async () => {
+    if (user?.uid) {
+      setIsLoading(true);
+      try {
+        await fetchLogs(user.uid);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadLogs();
+  }, [user?.uid]);
+
   const sortLogs = (logsToSort: DailyLog[]): DailyLog[] => {
     return [...logsToSort].sort((a, b) => {
       let comparison = 0;
@@ -47,13 +62,6 @@ export function LogsHistory() {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const sortedLogs = sortLogs(logs);
   const currentLogs = sortedLogs.slice(startIndex, endIndex);
-
-  useEffect(() => {
-    if (user?.uid) {
-      fetchLogs(user.uid)
-        .finally(() => setIsLoading(false));
-    }
-  }, [user?.uid]);
 
   const handleSort = (field: SortField) => {
     setSortConfig(prevConfig => ({
@@ -84,7 +92,7 @@ export function LogsHistory() {
       setEditingLog(null);
       setEditValues({});
     } catch (error) {
-      console.error('Faile to update log:', error);
+      console.error('Failed to update log:', error);
     }
   };
 
@@ -151,6 +159,7 @@ export function LogsHistory() {
       <LogsHeader
         selectedCount={selectedLogs.size}
         onBulkDelete={handleBulkDelete}
+        onImportComplete={loadLogs}
       />
 
       <div className="bg-white shadow-sm rounded-lg overflow-hidden">
