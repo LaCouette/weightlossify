@@ -41,7 +41,7 @@ export function Step5({ formData, onChange }: Step5Props) {
   })();
 
   const maxCalories = roundCalories(
-    Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 1.3 : 1.5)),
+    Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 2.5 : 1.5)),
     formData.primaryGoal
   );
   const minCalories = roundCalories(
