@@ -3,6 +3,8 @@ import { UserProfile } from '../../../../types/profile';
 import { GoalSelection } from './steps/GoalSelection';
 import { WeightLossPlan } from './steps/WeightLossPlan';
 import { TargetAdjustment } from './steps/TargetAdjustment';
+import { useAuthStore } from '../../../../stores/authStore';
+import { useUserStore } from '../../../../stores/userStore';
 
 interface GoalChangeWizardProps {
   currentProfile: UserProfile;
@@ -12,6 +14,9 @@ interface GoalChangeWizardProps {
 
 export function GoalChangeWizard({ currentProfile, onComplete, onCancel }: GoalChangeWizardProps) {
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuthStore();
+  const { updateProfile } = useUserStore();
   const [updatedProfile, setUpdatedProfile] = useState<UserProfile>({
     ...currentProfile,
     primaryGoal: currentProfile.primaryGoal,
@@ -21,9 +26,26 @@ export function GoalChangeWizard({ currentProfile, onComplete, onCancel }: GoalC
     dailyCaloriesTarget: currentProfile.dailyCaloriesTarget
   });
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === getMaxSteps()) {
-      onComplete(updatedProfile);
+      if (!user?.uid) return;
+      
+      try {
+        setIsSubmitting(true);
+        
+        // Update profile in Firestore
+        await updateProfile(user.uid, {
+          ...updatedProfile,
+          updatedAt: new Date()
+        });
+        
+        // Notify parent component
+        onComplete(updatedProfile);
+      } catch (error) {
+        console.error('Failed to save profile changes:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
       setStep(prev => prev + 1);
     }
@@ -133,16 +155,18 @@ export function GoalChangeWizard({ currentProfile, onComplete, onCancel }: GoalC
         <button
           type="button"
           onClick={handleBack}
-          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          disabled={isSubmitting}
+          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >
           {step === 1 ? 'Cancel' : 'Back'}
         </button>
         <button
           type="button"
           onClick={handleNext}
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+          disabled={isSubmitting}
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
         >
-          {step === getMaxSteps() ? 'Complete' : 'Next'}
+          {step === getMaxSteps() ? (isSubmitting ? 'Saving...' : 'Complete') : 'Next'}
         </button>
       </div>
     </div>

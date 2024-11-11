@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useLogsStore } from '../../stores/logsStore';
 import { useWeightStore } from '../../stores/weightStore';
@@ -12,6 +12,8 @@ export function CsvImport({ onComplete }: CsvImportProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   
   const { user } = useAuthStore();
   const { addLog } = useLogsStore();
@@ -103,16 +105,31 @@ export function CsvImport({ onComplete }: CsvImportProps) {
     return result;
   };
 
+  const handleCancel = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+      setIsLoading(false);
+      setProgress({ current: 0, total: 0 });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user?.uid) return;
 
     setIsLoading(true);
     setError(null);
+    const controller = new AbortController();
+    setAbortController(controller);
 
     try {
       const text = await file.text();
       const lines = text.split(/\r?\n/).filter(line => cleanString(line));
+      setProgress({ current: 0, total: lines.length - 1 });
       
       const firstLine = cleanString(lines[0]);
       const delimiter = firstLine.includes('|') ? '|' : ',';
@@ -122,6 +139,11 @@ export function CsvImport({ onComplete }: CsvImportProps) {
       let successCount = 0;
       
       for (let i = startIndex; i < lines.length; i++) {
+        // Check if import was cancelled
+        if (controller.signal.aborted) {
+          throw new Error('Import cancelled');
+        }
+
         const line = cleanString(lines[i]);
         if (!line) continue;
 
@@ -144,6 +166,8 @@ export function CsvImport({ onComplete }: CsvImportProps) {
           if (logEntry.weight !== undefined) {
             latestWeight = logEntry.weight;
           }
+
+          setProgress(prev => ({ ...prev, current: i }));
         } catch (err) {
           console.error(`Error parsing line ${i + 1}:`, line, err);
           throw new Error(`Error in line ${i + 1}: ${err.message}`);
@@ -157,9 +181,13 @@ export function CsvImport({ onComplete }: CsvImportProps) {
       onComplete();
       alert(`Successfully imported ${successCount} logs`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import CSV file');
+      if (err.message !== 'Import cancelled') {
+        setError(err instanceof Error ? err.message : 'Failed to import CSV file');
+      }
     } finally {
       setIsLoading(false);
+      setAbortController(null);
+      setProgress({ current: 0, total: 0 });
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -184,6 +212,29 @@ export function CsvImport({ onComplete }: CsvImportProps) {
         <Upload className="h-4 w-4" />
         <span>{isLoading ? 'Importing...' : 'Import CSV'}</span>
       </button>
+
+      {isLoading && progress.total > 0 && (
+        <div className="absolute top-full mt-2 w-64 bg-white p-4 rounded-lg shadow-lg border border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-600">Importing...</span>
+            <button
+              onClick={handleCancel}
+              className="p-1 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-green-500 transition-all duration-300"
+              style={{ width: `${(progress.current / progress.total) * 100}%` }}
+            />
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {progress.current} of {progress.total} entries
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="absolute top-full mt-2 w-64 p-3 bg-red-50 border border-red-200 rounded-lg">

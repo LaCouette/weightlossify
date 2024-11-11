@@ -192,6 +192,8 @@ export function LogsHistory() {
         selectedCount={isAllPagesSelected ? logs.length : selectedLogs.size}
         onBulkDelete={handleBulkDelete}
         onImportComplete={loadLogs}
+        logs={logs}
+        selectedLogs={selectedLogs}
       />
 
       <div className="bg-white shadow-sm rounded-lg overflow-hidden">

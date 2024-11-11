@@ -1,14 +1,25 @@
 import React from 'react';
 import { Calendar, Trash2 } from 'lucide-react';
 import { CsvImport } from './CsvImport';
+import { CsvExport } from './CsvExport';
+import { ManualLogEntry } from './ManualLogEntry';
+import type { DailyLog } from '../../types';
 
 interface LogsHeaderProps {
   selectedCount: number;
   onBulkDelete: () => void;
   onImportComplete: () => void;
+  logs: DailyLog[];
+  selectedLogs: Set<string>;
 }
 
-export function LogsHeader({ selectedCount, onBulkDelete, onImportComplete }: LogsHeaderProps) {
+export function LogsHeader({ 
+  selectedCount, 
+  onBulkDelete, 
+  onImportComplete,
+  logs,
+  selectedLogs
+}: LogsHeaderProps) {
   return (
     <div className="mb-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -17,6 +28,8 @@ export function LogsHeader({ selectedCount, onBulkDelete, onImportComplete }: Lo
       </div>
       
       <div className="flex items-center gap-4">
+        <ManualLogEntry onComplete={onImportComplete} />
+        <CsvExport logs={logs} selectedLogs={selectedLogs} />
         <CsvImport onComplete={onImportComplete} />
         
         {selectedCount > 0 && (

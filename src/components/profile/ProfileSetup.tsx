@@ -10,14 +10,16 @@ import { Step2 } from './steps/Step2';
 import { Step3 } from './steps/Step3';
 import { Step4 } from './steps/Step4';
 import { Step5 } from './steps/Step5';
+import { AlertTriangle } from 'lucide-react';
 
 export function ProfileSetup() {
   const { user } = useAuthStore();
-  const { profile, addProfile } = useUserStore();
+  const { profile, addProfile, updateProfile } = useUserStore();
   const { addLog } = useLogsStore();
   const updateCurrentWeight = useWeightStore(state => state.updateCurrentWeight);
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     email: user?.email || '',
     name: '',
@@ -35,19 +37,26 @@ export function ProfileSetup() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Update email if user changes
+  // Initialize form with existing profile data if available
   useEffect(() => {
-    if (user?.email) {
-      setFormData(prev => ({ ...prev, email: user.email || '' }));
+    if (profile) {
+      setFormData({
+        email: user?.email || '',
+        name: profile.name,
+        gender: profile.gender,
+        age: profile.age,
+        height: profile.height,
+        currentWeight: profile.currentWeight,
+        bodyFat: profile.bodyFat || 0,
+        activityLevel: profile.activityLevel,
+        primaryGoal: profile.primaryGoal,
+        targetWeight: profile.targetWeight || 0,
+        weeklyWeightGoal: profile.weeklyWeightGoal || '',
+        dailyStepsGoal: profile.dailyStepsGoal,
+        dailyCaloriesTarget: profile.dailyCaloriesTarget
+      });
     }
-  }, [user?.email]);
-
-  // Redirect if profile setup is already completed
-  useEffect(() => {
-    if (profile?.setupCompleted) {
-      navigate('/');
-    }
-  }, [profile, navigate]);
+  }, [profile, user?.email]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -65,6 +74,25 @@ export function ProfileSetup() {
 
   const handleBack = () => {
     setStep(prev => prev - 1);
+  };
+
+  const handleCancel = async () => {
+    if (!user?.uid || !profile) return;
+    
+    try {
+      setIsSubmitting(true);
+      // Restore setupCompleted flag
+      await updateProfile(user.uid, {
+        ...profile,
+        setupCompleted: true,
+        updatedAt: new Date()
+      });
+      navigate('/profile');
+    } catch (error) {
+      console.error('Error canceling setup:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,7 +154,7 @@ export function ProfileSetup() {
       <div className="max-w-3xl w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Let's set up your profile
+            {profile ? 'Update Your Profile' : "Let's set up your profile"}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Step {step} of 5
@@ -137,13 +165,23 @@ export function ProfileSetup() {
           {renderStep()}
 
           <div className="flex justify-between space-x-4">
-            {step > 1 && (
+            {step > 1 ? (
               <button
                 type="button"
                 onClick={handleBack}
-                className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={isSubmitting}
+                className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
                 Back
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowCancelConfirm(true)}
+                disabled={isSubmitting}
+                className="flex-1 py-2 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+              >
+                Cancel Setup
               </button>
             )}
             
@@ -157,6 +195,40 @@ export function ProfileSetup() {
           </div>
         </form>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-6">
+            <div className="flex items-center gap-3 text-yellow-600">
+              <AlertTriangle className="h-6 w-6" />
+              <h3 className="text-lg font-semibold">Cancel Setup?</h3>
+            </div>
+            
+            <p className="text-gray-600">
+              Are you sure you want to cancel the setup? Your previous profile settings will be restored.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowCancelConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md"
+              >
+                Continue Setup
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50"
+              >
+                {isSubmitting ? 'Canceling...' : 'Yes, Cancel Setup'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
