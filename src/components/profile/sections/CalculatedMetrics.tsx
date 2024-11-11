@@ -3,16 +3,20 @@ import { Activity, Scale, Heart, Target } from 'lucide-react';
 import { UserProfile } from '../../../types/profile';
 import { calculateBMI, calculateBMR, getBMICategory } from '../../../utils/calculations';
 import { motion } from 'framer-motion';
+import { useWeightStore } from '../../../stores/weightStore';
 
 interface CalculatedMetricsProps {
   profile: UserProfile;
 }
 
 export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
-  const bmi = calculateBMI(profile.currentWeight, profile.height);
+  // Use the global weight state for calculations
+  const currentWeight = useWeightStore(state => state.currentWeight) || profile.currentWeight;
+
+  const bmi = calculateBMI(currentWeight, profile.height);
   const bmiCategory = getBMICategory(bmi);
   const bmr = calculateBMR(
-    profile.currentWeight,
+    currentWeight,
     profile.height,
     profile.age,
     profile.gender,
@@ -53,7 +57,7 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
       icon: Target,
       label: 'Weight to Goal',
       value: profile.targetWeight 
-        ? Math.abs(profile.currentWeight - profile.targetWeight).toFixed(1)
+        ? Math.abs(currentWeight - profile.targetWeight).toFixed(1)
         : '-',
       subtext: 'kg remaining',
       indicator: 'bg-indigo-500'

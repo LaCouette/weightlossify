@@ -1,7 +1,7 @@
 import React from 'react';
 import { Activity } from 'lucide-react';
 import type { DailyLog } from '../../types';
-import { calculateRemainingDays } from '../../utils/dateCalculations';
+import { calculateRemainingDays, isToday } from '../../utils/dateCalculations';
 
 interface StepsMetricProps {
   logs: DailyLog[];
@@ -11,6 +11,9 @@ interface StepsMetricProps {
 }
 
 export function StepsMetric({ logs, dailyTarget, dateRange, endDate }: StepsMetricProps) {
+  // Check if today's steps are logged
+  const hasTodaySteps = logs.some(log => isToday(log.date) && log.steps !== undefined);
+  
   const stepsLogs = logs.filter(log => log.steps);
   const totalSteps = stepsLogs.reduce((sum, log) => sum + (log.steps || 0), 0);
   const averageSteps = stepsLogs.length > 0
@@ -18,7 +21,7 @@ export function StepsMetric({ logs, dailyTarget, dateRange, endDate }: StepsMetr
     : 0;
 
   const daysInPeriod = dateRange === 'week' ? 7 : 30;
-  const remainingDays = calculateRemainingDays(endDate);
+  const remainingDays = calculateRemainingDays(endDate) - (hasTodaySteps ? 1 : 0);
   const totalTargetSteps = dailyTarget * daysInPeriod;
   const remainingSteps = totalTargetSteps - totalSteps;
   const averageRemainingSteps = remainingDays > 0

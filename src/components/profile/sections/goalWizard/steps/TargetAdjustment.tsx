@@ -40,7 +40,7 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
   })();
 
   const maxCalories = roundCalories(
-    Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 1.3 : 1.5)),
+    Math.round(baseMaintenance * (isGain ? 1.7 : isMaintenance ? 2.5 : 1.5)),
     profile.primaryGoal
   );
   const minCalories = roundCalories(

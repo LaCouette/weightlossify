@@ -1,7 +1,7 @@
 import React from 'react';
 import { Utensils } from 'lucide-react';
 import type { DailyLog } from '../../types';
-import { calculateRemainingDays } from '../../utils/dateCalculations';
+import { calculateRemainingDays, isToday } from '../../utils/dateCalculations';
 
 interface CaloriesMetricProps {
   logs: DailyLog[];
@@ -11,6 +11,9 @@ interface CaloriesMetricProps {
 }
 
 export function CaloriesMetric({ logs, dailyTarget, dateRange, endDate }: CaloriesMetricProps) {
+  // Check if today's calories are logged
+  const hasTodayCalories = logs.some(log => isToday(log.date) && log.calories !== undefined);
+  
   const caloriesLogs = logs.filter(log => log.calories);
   const totalCalories = caloriesLogs.reduce((sum, log) => sum + (log.calories || 0), 0);
   const averageCalories = caloriesLogs.length > 0
@@ -18,7 +21,7 @@ export function CaloriesMetric({ logs, dailyTarget, dateRange, endDate }: Calori
     : 0;
 
   const daysInPeriod = dateRange === 'week' ? 7 : 30;
-  const remainingDays = calculateRemainingDays(endDate);
+  const remainingDays = calculateRemainingDays(endDate) - (hasTodayCalories ? 1 : 0);
   const totalTargetCalories = dailyTarget * daysInPeriod;
   const remainingCalories = totalTargetCalories - totalCalories;
   const averageRemainingCalories = remainingDays > 0

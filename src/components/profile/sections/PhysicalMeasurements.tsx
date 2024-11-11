@@ -2,6 +2,7 @@ import React from 'react';
 import { Ruler, Scale, Activity, Percent, Edit2 } from 'lucide-react';
 import { UserProfile } from '../../../types/profile';
 import { motion } from 'framer-motion';
+import { useWeightStore } from '../../../stores/weightStore';
 
 interface PhysicalMeasurementsProps {
   profile: UserProfile;
@@ -22,6 +23,9 @@ export function PhysicalMeasurements({
   onCancel,
   onEdit
 }: PhysicalMeasurementsProps) {
+  // Use the global weight state instead of profile weight
+  const currentWeight = useWeightStore(state => state.currentWeight);
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -74,7 +78,7 @@ export function PhysicalMeasurements({
               <input
                 type="number"
                 name="currentWeight"
-                value={profile.currentWeight}
+                value={isEditing ? profile.currentWeight : (currentWeight || profile.currentWeight)}
                 onChange={onChange}
                 disabled={!isEditing}
                 min="40"

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserStore } from '../../stores/userStore';
+import { useLogsStore } from '../../stores/logsStore';
+import { useWeightStore } from '../../stores/weightStore';
 import { FormData } from '../../types/profile';
 import { Step1 } from './steps/Step1';
 import { Step2 } from './steps/Step2';
@@ -12,6 +14,8 @@ import { Step5 } from './steps/Step5';
 export function ProfileSetup() {
   const { user } = useAuthStore();
   const { profile, addProfile } = useUserStore();
+  const { addLog } = useLogsStore();
+  const updateCurrentWeight = useWeightStore(state => state.updateCurrentWeight);
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
@@ -69,12 +73,29 @@ export function ProfileSetup() {
 
     try {
       setIsSubmitting(true);
+
+      // Create weight log entry if weight changed
+      if (formData.currentWeight > 0) {
+        // Add weight log
+        await addLog(user.uid, {
+          date: new Date().toISOString(),
+          weight: formData.currentWeight,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+
+        // Update global weight state
+        updateCurrentWeight(formData.currentWeight);
+      }
+
+      // Save profile
       await addProfile(user.uid, {
         ...formData,
         setupCompleted: true,
         createdAt: new Date(),
         updatedAt: new Date()
       });
+
       navigate('/');
     } catch (error) {
       console.error('Error saving profile:', error);

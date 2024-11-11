@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LucideIcon, AlertCircle, Check, Edit2 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useLogsStore } from '../stores/logsStore';
+import { useWeightStore } from '../stores/weightStore';
 import { getTodayLog, formatDateTime } from '../utils/dateUtils';
 import type { DailyLog } from '../types';
 
@@ -34,10 +35,10 @@ export function QuickLogWidget({
   const [isEditing, setIsEditing] = useState(false);
   const { user } = useAuthStore();
   const { logs, addLog, updateLog } = useLogsStore();
+  const updateCurrentWeight = useWeightStore(state => state.updateCurrentWeight);
   const todayLog = getTodayLog(logs);
 
   useEffect(() => {
-    // Update value when todayLog changes and we're not editing
     if (!isEditing && todayLog?.[field] !== undefined) {
       setValue(todayLog[field] || defaultValue);
     }
@@ -54,7 +55,7 @@ export function QuickLogWidget({
       if (todayLog) {
         // Update existing log
         await updateLog(user.uid, todayLog.id, {
-          ...todayLog, // Keep existing fields
+          ...todayLog,
           [field]: value,
           updatedAt: new Date()
         });
@@ -67,6 +68,11 @@ export function QuickLogWidget({
           updatedAt: new Date()
         };
         await addLog(user.uid, newLog);
+      }
+
+      // Update global weight state if this is a weight log
+      if (field === 'weight') {
+        updateCurrentWeight(value);
       }
       
       setIsEditing(false);
@@ -90,7 +96,6 @@ export function QuickLogWidget({
     setValue(todayLog?.[field] || defaultValue);
   };
 
-  // Check if this specific field has been logged today
   const hasLoggedToday = todayLog?.[field] !== undefined && todayLog[field] !== null;
 
   return (
