@@ -2,6 +2,7 @@ import React from 'react';
 import { Utensils } from 'lucide-react';
 import type { DailyLog } from '../../types';
 import { calculateRemainingDays, isToday } from '../../utils/dateCalculations';
+import { QuickLogWidget } from '../QuickLogWidget';
 
 interface CaloriesMetricProps {
   logs: DailyLog[];
@@ -87,6 +88,20 @@ export function CaloriesMetric({ logs, dailyTarget, dateRange, endDate }: Calori
             </div>
           </div>
         )}
+
+        {/* Quick Log Widget */}
+        <div className="pt-4 border-t">
+          <QuickLogWidget
+            icon={Utensils}
+            label="Log Calories"
+            unit="kcal"
+            step={50}
+            min={0}
+            max={10000}
+            defaultValue={dailyTarget}
+            field="calories"
+          />
+        </div>
       </div>
     </div>
   );

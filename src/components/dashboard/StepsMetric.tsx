@@ -2,6 +2,7 @@ import React from 'react';
 import { Activity } from 'lucide-react';
 import type { DailyLog } from '../../types';
 import { calculateRemainingDays, isToday } from '../../utils/dateCalculations';
+import { QuickLogWidget } from '../QuickLogWidget';
 
 interface StepsMetricProps {
   logs: DailyLog[];
@@ -87,6 +88,20 @@ export function StepsMetric({ logs, dailyTarget, dateRange, endDate }: StepsMetr
             </div>
           </div>
         )}
+
+        {/* Quick Log Widget */}
+        <div className="pt-4 border-t">
+          <QuickLogWidget
+            icon={Activity}
+            label="Log Steps"
+            unit="steps"
+            step={100}
+            min={0}
+            max={100000}
+            defaultValue={dailyTarget}
+            field="steps"
+          />
+        </div>
       </div>
     </div>
   );
