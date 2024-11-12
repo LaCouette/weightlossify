@@ -6,7 +6,7 @@ import { LogsHeader } from './logs/LogsHeader';
 import { LogsTableHeader, type SortConfig, type SortField } from './logs/LogsTableHeader';
 import { LogRow } from './logs/LogRow';
 import { LogsPagination } from './logs/LogsPagination';
-import { LogCard } from './logs/LogCard';
+import { AlertDialog } from './logs/AlertDialog';
 
 const ITEMS_PER_PAGE = 30;
 
@@ -20,16 +20,11 @@ export function LogsHistory() {
   const [selectedLogs, setSelectedLogs] = useState<Set<string>>(new Set());
   const [isAllPagesSelected, setIsAllPagesSelected] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'date', direction: 'desc' });
-  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobileView(window.innerWidth < 768);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    type: 'single' | 'bulk';
+    logId?: string;
+  }>({ isOpen: false, type: 'single' });
 
   const loadLogs = async () => {
     if (user?.uid) {
@@ -114,9 +109,7 @@ export function LogsHistory() {
   };
 
   const handleDelete = async (logId: string) => {
-    if (!user?.uid || !window.confirm('Are you sure you want to delete this log? This action cannot be undone.')) {
-      return;
-    }
+    if (!user?.uid) return;
 
     try {
       await deleteLog(user.uid, logId);
@@ -129,14 +122,6 @@ export function LogsHistory() {
   const handleBulkDelete = async () => {
     if (!user?.uid || selectedLogs.size === 0) return;
 
-    const message = isAllPagesSelected
-      ? `Are you sure you want to delete all ${logs.length} logs? This action cannot be undone.`
-      : `Are you sure you want to delete ${selectedLogs.size} selected logs? This action cannot be undone.`;
-
-    if (!window.confirm(message)) {
-      return;
-    }
-
     try {
       const logsToDelete = isAllPagesSelected
         ? logs.map(log => log.id)
@@ -145,6 +130,7 @@ export function LogsHistory() {
       await bulkDeleteLogs(user.uid, logsToDelete);
       setSelectedLogs(new Set());
       setIsAllPagesSelected(false);
+      setDeleteConfirm({ isOpen: false, type: 'bulk' });
     } catch (error) {
       console.error('Failed to delete logs:', error);
     }
@@ -199,71 +185,47 @@ export function LogsHistory() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
       <LogsHeader
         selectedCount={isAllPagesSelected ? logs.length : selectedLogs.size}
-        onBulkDelete={handleBulkDelete}
+        onBulkDelete={() => setDeleteConfirm({ isOpen: true, type: 'bulk' })}
         onImportComplete={loadLogs}
         logs={logs}
         selectedLogs={selectedLogs}
       />
 
-      <div className="mt-4 sm:mt-6 bg-white shadow-sm rounded-lg overflow-hidden">
-        {isMobileView ? (
-          <div className="divide-y divide-gray-200">
-            {currentLogs.map((log) => (
-              <LogCard
-                key={log.id}
-                log={log}
-                isSelected={selectedLogs.has(log.id)}
-                isEditing={editingLog === log.id}
-                editValues={editValues}
-                onToggleSelect={() => toggleLogSelection(log.id)}
-                onEdit={() => handleEdit(log)}
-                onSave={() => handleSave(log.id)}
-                onCancel={handleCancel}
-                onDelete={() => handleDelete(log.id)}
-                onEditValueChange={(field, value) => 
-                  setEditValues(prev => ({ ...prev, [field]: value }))
-                }
-                sortConfig={sortConfig}
-                onSort={handleSort}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <LogsTableHeader
-                sortConfig={sortConfig}
-                onSort={handleSort}
-                onToggleSelectAll={toggleAllSelection}
-                onToggleSelectAllPages={toggleSelectAllPages}
-                allSelected={currentLogs.every(log => selectedLogs.has(log.id))}
-                someSelected={currentLogs.some(log => selectedLogs.has(log.id))}
-                isAllPagesSelected={isAllPagesSelected}
-                totalLogs={logs.length}
-                selectedCount={selectedLogs.size}
-              />
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentLogs.map((log) => (
-                  <LogRow
-                    key={log.id}
-                    log={log}
-                    isSelected={selectedLogs.has(log.id)}
-                    isEditing={editingLog === log.id}
-                    editValues={editValues}
-                    onToggleSelect={() => toggleLogSelection(log.id)}
-                    onEdit={() => handleEdit(log)}
-                    onSave={() => handleSave(log.id)}
-                    onCancel={handleCancel}
-                    onDelete={() => handleDelete(log.id)}
-                    onEditValueChange={(field, value) => 
-                      setEditValues(prev => ({ ...prev, [field]: value }))
-                    }
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <div className="mt-4 sm:mt-8 bg-white shadow-sm rounded-lg overflow-hidden">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <table className="min-w-full divide-y divide-gray-200">
+            <LogsTableHeader
+              sortConfig={sortConfig}
+              onSort={handleSort}
+              onToggleSelectAll={toggleAllSelection}
+              onToggleSelectAllPages={toggleSelectAllPages}
+              allSelected={currentLogs.every(log => selectedLogs.has(log.id))}
+              someSelected={currentLogs.some(log => selectedLogs.has(log.id))}
+              isAllPagesSelected={isAllPagesSelected}
+              totalLogs={logs.length}
+              selectedCount={selectedLogs.size}
+            />
+            <tbody className="bg-white divide-y divide-gray-200">
+              {currentLogs.map((log) => (
+                <LogRow
+                  key={log.id}
+                  log={log}
+                  isSelected={selectedLogs.has(log.id)}
+                  isEditing={editingLog === log.id}
+                  editValues={editValues}
+                  onToggleSelect={() => toggleLogSelection(log.id)}
+                  onEdit={() => handleEdit(log)}
+                  onSave={() => handleSave(log.id)}
+                  onCancel={handleCancel}
+                  onDelete={() => setDeleteConfirm({ isOpen: true, type: 'single', logId: log.id })}
+                  onEditValueChange={(field, value) => 
+                    setEditValues(prev => ({ ...prev, [field]: value }))
+                  }
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         <LogsPagination
           currentPage={currentPage}
@@ -274,6 +236,26 @@ export function LogsHistory() {
           onPageChange={setCurrentPage}
         />
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, type: 'single' })}
+        onConfirm={() => {
+          if (deleteConfirm.type === 'single' && deleteConfirm.logId) {
+            handleDelete(deleteConfirm.logId);
+          } else {
+            handleBulkDelete();
+          }
+          setDeleteConfirm({ isOpen: false, type: 'single' });
+        }}
+        title={deleteConfirm.type === 'single' ? 'Delete Log Entry' : 'Delete Selected Logs'}
+        description={
+          deleteConfirm.type === 'single'
+            ? 'Are you sure you want to delete this log entry? This action cannot be undone.'
+            : `Are you sure you want to delete ${isAllPagesSelected ? 'all' : selectedLogs.size} selected logs? This action cannot be undone.`
+        }
+      />
     </div>
   );
 }
