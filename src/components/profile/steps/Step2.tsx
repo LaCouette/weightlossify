@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FormData } from '../../../types/profile';
 import { Ruler, Scale, Activity } from 'lucide-react';
+import { BodyFatSelector } from './BodyFatSelector';
 
 interface Step2Props {
   formData: FormData;
@@ -49,6 +50,15 @@ export function Step2({ formData, onChange }: Step2Props) {
       target: {
         name: 'currentWeight',
         value: formattedValue
+      }
+    } as React.ChangeEvent<HTMLInputElement>);
+  };
+
+  const handleBodyFatSelect = (value: number) => {
+    onChange({
+      target: {
+        name: 'bodyFat',
+        value: value.toString()
       }
     } as React.ChangeEvent<HTMLInputElement>);
   };
@@ -136,6 +146,13 @@ export function Step2({ formData, onChange }: Step2Props) {
             </div>
           </div>
         </div>
+
+        {/* Body Fat Selector */}
+        <BodyFatSelector
+          gender={formData.gender}
+          selectedValue={Number(formData.bodyFat) || 0}
+          onChange={handleBodyFatSelect}
+        />
 
         {/* Workout Activity Level Field */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">

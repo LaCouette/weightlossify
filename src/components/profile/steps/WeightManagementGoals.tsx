@@ -1,35 +1,34 @@
 import React from 'react';
 import { Scale, TrendingDown } from 'lucide-react';
-import { calculateBMR } from '../../../utils/calculations';
 
 interface WeightManagementGoalsProps {
   currentWeight: number;
-  targetWeight: number;
-  height: number;
-  age: number;
-  gender: string;
-  bodyFat?: number;
-  selectedGoal: 'moderate_loss' | 'aggressive_loss' | null;
-  onSelect: (goal: 'moderate_loss' | 'aggressive_loss') => void;
+  currentPlan?: string;
+  onChange: (plan: string, targetWeight: number) => void;
 }
 
 export function WeightManagementGoals({
   currentWeight,
-  targetWeight,
-  height,
-  age,
-  gender,
-  bodyFat,
-  selectedGoal,
-  onSelect
+  currentPlan,
+  onChange
 }: WeightManagementGoalsProps) {
-  const bmr = calculateBMR(currentWeight, height, age, gender, bodyFat);
-  const maintenanceCalories = Math.round(bmr * 1.1); // BMR + TEF (Thermic Effect of Food)
-  const moderateDeficit = 350;
-  const aggressiveDeficit = 600;
-  
-  const moderateWeeklyLoss = (moderateDeficit * 7) / 7700; // kg per week
-  const aggressiveWeeklyLoss = (aggressiveDeficit * 7) / 7700; // kg per week
+  const [targetWeight, setTargetWeight] = React.useState<number>(
+    Math.max(currentWeight - 20, currentWeight * 0.8)
+  );
+  const [selectedPlan, setSelectedPlan] = React.useState<'moderate_loss' | 'aggressive_loss'>(
+    currentPlan === '0.35' ? 'moderate_loss' : 'aggressive_loss'
+  );
+
+  const handlePlanSelect = (plan: 'moderate_loss' | 'aggressive_loss') => {
+    setSelectedPlan(plan);
+    onChange(plan === 'moderate_loss' ? '0.35' : '0.6', targetWeight);
+  };
+
+  const handleTargetWeightChange = (value: number) => {
+    const newValue = Math.min(Math.max(value, currentWeight * 0.6), currentWeight - 0.5);
+    setTargetWeight(newValue);
+    onChange(selectedPlan === 'moderate_loss' ? '0.35' : '0.6', newValue);
+  };
 
   const calculateTimeline = (weeklyLoss: number) => {
     const totalWeightToLose = currentWeight - targetWeight;
@@ -38,122 +37,140 @@ export function WeightManagementGoals({
     return { weeks, months };
   };
 
-  const moderateTimeline = calculateTimeline(moderateWeeklyLoss);
-  const aggressiveTimeline = calculateTimeline(aggressiveWeeklyLoss);
+  const moderateTimeline = calculateTimeline(0.35);
+  const aggressiveTimeline = calculateTimeline(0.6);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 mb-6">
-        <div className="p-2 bg-gray-100 rounded-lg">
-          <Scale className="h-5 w-5 text-gray-600" />
+      <div className="text-center space-y-2">
+        <div className="flex justify-center">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Scale className="h-6 w-6 text-blue-600" />
+          </div>
         </div>
-        <div>
-          <h3 className="font-bold text-gray-900">Select Your Plan</h3>
-          <p className="text-sm text-gray-600">Choose a plan that matches your ambition and lifestyle</p>
-        </div>
+        <h3 className="text-lg font-semibold">Weight Loss Plan</h3>
+        <p className="text-sm text-gray-600">
+          Choose your preferred approach and set your target weight
+        </p>
       </div>
 
       <div className="space-y-4">
-        {/* Moderate Weight Loss */}
-        <button
-          type="button"
-          onClick={() => onSelect('moderate_loss')}
-          className={`w-full p-6 rounded-xl border-2 transition-all text-left ${
-            selectedGoal === 'moderate_loss'
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-200 hover:border-gray-300 bg-white'
-          }`}
-        >
-          <div className="flex items-start gap-4">
-            <div className={`p-2 rounded-lg ${
-              selectedGoal === 'moderate_loss' ? 'bg-blue-100' : 'bg-gray-100'
-            }`}>
-              <TrendingDown className={`h-6 w-6 ${
-                selectedGoal === 'moderate_loss' ? 'text-blue-600' : 'text-gray-600'
-              }`} />
+        {/* Target Weight Selector */}
+        <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <label className="block text-sm font-medium text-gray-700 mb-4">Target Weight</label>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold text-blue-600">
+                {targetWeight.toFixed(1)} kg
+              </span>
+              <input
+                type="number"
+                value={targetWeight}
+                onChange={(e) => handleTargetWeightChange(Number(e.target.value))}
+                step="0.5"
+                min={currentWeight * 0.6}
+                max={currentWeight - 0.5}
+                className="w-24 p-2 text-right border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-gray-900">Moderate Weight Loss</h4>
-              <p className="text-sm text-gray-600 mt-1">Steady, sustainable progress</p>
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Daily Deficit</p>
-                  <p className="text-lg font-semibold text-blue-600">{moderateDeficit} kcal</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Weekly Loss</p>
-                  <p className="text-lg font-semibold text-blue-600">{moderateWeeklyLoss.toFixed(2)} kg</p>
-                </div>
-              </div>
-              {selectedGoal === 'moderate_loss' && (
-                <div className="mt-4 p-4 bg-blue-100 rounded-lg">
-                  <div className="space-y-2">
-                    <p className="text-sm text-blue-700">
-                      <strong>Expected Progress:</strong>
-                    </p>
-                    <ul className="text-sm text-blue-700 space-y-1">
-                      <li>• {(moderateWeeklyLoss * 4).toFixed(1)} kg per month</li>
-                      <li>• Reach your goal in approximately {moderateTimeline.weeks} weeks ({moderateTimeline.months} months)</li>
-                    </ul>
-                  </div>
-                </div>
-              )}
+
+            <input
+              type="range"
+              value={targetWeight}
+              onChange={(e) => handleTargetWeightChange(Number(e.target.value))}
+              step="0.5"
+              min={currentWeight * 0.6}
+              max={currentWeight - 0.5}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            />
+
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>{(currentWeight * 0.6).toFixed(1)} kg</span>
+              <span>{(currentWeight - 0.5).toFixed(1)} kg</span>
+            </div>
+
+            <div className="mt-2 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+              Total weight to lose: {(currentWeight - targetWeight).toFixed(1)} kg
             </div>
           </div>
-        </button>
+        </div>
 
-        {/* Aggressive Weight Loss */}
-        <button
-          type="button"
-          onClick={() => onSelect('aggressive_loss')}
-          className={`w-full p-6 rounded-xl border-2 transition-all text-left ${
-            selectedGoal === 'aggressive_loss'
-              ? 'border-purple-500 bg-purple-50'
-              : 'border-gray-200 hover:border-gray-300 bg-white'
-          }`}
-        >
-          <div className="flex items-start gap-4">
-            <div className={`p-2 rounded-lg ${
-              selectedGoal === 'aggressive_loss' ? 'bg-purple-100' : 'bg-gray-100'
-            }`}>
-              <TrendingDown className={`h-6 w-6 ${
-                selectedGoal === 'aggressive_loss' ? 'text-purple-600' : 'text-gray-600'
-              }`} />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-gray-900">Aggressive Weight Loss</h4>
-              <p className="text-sm text-gray-600 mt-1">Faster results, requires more discipline</p>
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Daily Deficit</p>
-                  <p className="text-lg font-semibold text-purple-600">{aggressiveDeficit} kcal</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Weekly Loss</p>
-                  <p className="text-lg font-semibold text-purple-600">{aggressiveWeeklyLoss.toFixed(2)} kg</p>
-                </div>
+        {/* Plan Selection */}
+        <div className="space-y-4">
+          {/* Moderate Loss Plan */}
+          <button
+            type="button"
+            onClick={() => handlePlanSelect('moderate_loss')}
+            className={`w-full p-6 rounded-xl border-2 transition-all text-left ${
+              selectedPlan === 'moderate_loss'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300 bg-white'
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              <div className={`p-2 rounded-lg ${
+                selectedPlan === 'moderate_loss' ? 'bg-blue-100' : 'bg-gray-100'
+              }`}>
+                <TrendingDown className={`h-6 w-6 ${
+                  selectedPlan === 'moderate_loss' ? 'text-blue-600' : 'text-gray-600'
+                }`} />
               </div>
-              {selectedGoal === 'aggressive_loss' && (
-                <div className="mt-4 p-4 bg-purple-100 rounded-lg">
-                  <div className="space-y-2">
-                    <p className="text-sm text-purple-700">
-                      <strong>Expected Progress:</strong>
+              <div>
+                <h4 className="font-semibold text-gray-900">Moderate Weight Loss</h4>
+                <p className="text-sm text-gray-600 mt-1">Steady, sustainable progress</p>
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Weekly Loss</p>
+                    <p className="text-lg font-semibold text-blue-600">0.35 kg</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Timeline</p>
+                    <p className="text-lg font-semibold text-blue-600">
+                      ~{moderateTimeline.months} months
                     </p>
-                    <ul className="text-sm text-purple-700 space-y-1">
-                      <li>• {(aggressiveWeeklyLoss * 4).toFixed(1)} kg per month</li>
-                      <li>• Reach your goal in approximately {aggressiveTimeline.weeks} weeks ({aggressiveTimeline.months} months)</li>
-                    </ul>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-        </button>
-      </div>
+          </button>
 
-      <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
-        <strong>Note:</strong> These calculations are estimates based on your maintenance calories of {maintenanceCalories} kcal/day. 
-        Adjust your intake based on your progress and how you feel.
+          {/* Aggressive Loss Plan */}
+          <button
+            type="button"
+            onClick={() => handlePlanSelect('aggressive_loss')}
+            className={`w-full p-6 rounded-xl border-2 transition-all text-left ${
+              selectedPlan === 'aggressive_loss'
+                ? 'border-purple-500 bg-purple-50'
+                : 'border-gray-200 hover:border-gray-300 bg-white'
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              <div className={`p-2 rounded-lg ${
+                selectedPlan === 'aggressive_loss' ? 'bg-purple-100' : 'bg-gray-100'
+              }`}>
+                <TrendingDown className={`h-6 w-6 ${
+                  selectedPlan === 'aggressive_loss' ? 'text-purple-600' : 'text-gray-600'
+                }`} />
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-900">Aggressive Weight Loss</h4>
+                <p className="text-sm text-gray-600 mt-1">Faster results, requires more discipline</p>
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Weekly Loss</p>
+                    <p className="text-lg font-semibold text-purple-600">0.6 kg</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Timeline</p>
+                    <p className="text-lg font-semibold text-purple-600">
+                      ~{aggressiveTimeline.months} months
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   );
