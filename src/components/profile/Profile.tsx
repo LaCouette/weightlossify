@@ -102,7 +102,7 @@ export function Profile() {
 
   if (!user || !profile || !editedProfile) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white shadow rounded-lg p-6">
             <div className="animate-pulse flex space-x-4">
@@ -122,60 +122,66 @@ export function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <ProfileHeader
-          isResetting={isResetting}
-          onRestartSetup={handleRestartSetup}
-          error={error}
-        />
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-4 sm:gap-6 auto-rows-min">
+          <ProfileHeader
+            isResetting={isResetting}
+            onRestartSetup={handleRestartSetup}
+            error={error}
+          />
 
-        <BasicInformation
-          profile={editedProfile}
-          isEditing={editingSections.basicInfo}
-          onChange={handleInputChange}
-          onSave={() => handleSaveSection('basicInfo')}
-          onCancel={() => handleCancelSection('basicInfo')}
-          onEdit={() => setEditingSections(prev => ({ ...prev, basicInfo: true }))}
-          isLoading={isLoading}
-        />
+          <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+            <BasicInformation
+              profile={editedProfile}
+              isEditing={editingSections.basicInfo}
+              onChange={handleInputChange}
+              onSave={() => handleSaveSection('basicInfo')}
+              onCancel={() => handleCancelSection('basicInfo')}
+              onEdit={() => setEditingSections(prev => ({ ...prev, basicInfo: true }))}
+              isLoading={isLoading}
+            />
 
-        <PhysicalMeasurements
-          profile={editedProfile}
-          isEditing={editingSections.physicalMeasurements}
-          onChange={handleInputChange}
-          onSave={() => handleSaveSection('physicalMeasurements')}
-          onCancel={() => handleCancelSection('physicalMeasurements')}
-          onEdit={() => setEditingSections(prev => ({ ...prev, physicalMeasurements: true }))}
-          isLoading={isLoading}
-        />
+            <PhysicalMeasurements
+              profile={editedProfile}
+              isEditing={editingSections.physicalMeasurements}
+              onChange={handleInputChange}
+              onSave={() => handleSaveSection('physicalMeasurements')}
+              onCancel={() => handleCancelSection('physicalMeasurements')}
+              onEdit={() => setEditingSections(prev => ({ ...prev, physicalMeasurements: true }))}
+              isLoading={isLoading}
+            />
+          </div>
 
-        <GoalsTargets
-          profile={editedProfile}
-          isEditing={editingSections.goalsTargets}
-          onChange={handleInputChange}
-          onSave={() => handleSaveSection('goalsTargets')}
-          onCancel={() => handleCancelSection('goalsTargets')}
-          onEdit={() => setEditingSections(prev => ({ ...prev, goalsTargets: true }))}
-          isLoading={isLoading}
-        />
+          <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+            <GoalsTargets
+              profile={editedProfile}
+              isEditing={editingSections.goalsTargets}
+              onChange={handleInputChange}
+              onSave={() => handleSaveSection('goalsTargets')}
+              onCancel={() => handleCancelSection('goalsTargets')}
+              onEdit={() => setEditingSections(prev => ({ ...prev, goalsTargets: true }))}
+              isLoading={isLoading}
+            />
 
-        <DailyTargets
-          profile={editedProfile}
-          isEditing={editingSections.dailyTargets}
-          onChange={handleInputChange}
-          onSave={() => handleSaveSection('dailyTargets')}
-          onCancel={() => handleCancelSection('dailyTargets')}
-          onEdit={() => setEditingSections(prev => ({ ...prev, dailyTargets: true }))}
-          isLoading={isLoading}
-        />
+            <DailyTargets
+              profile={editedProfile}
+              isEditing={editingSections.dailyTargets}
+              onChange={handleInputChange}
+              onSave={() => handleSaveSection('dailyTargets')}
+              onCancel={() => handleCancelSection('dailyTargets')}
+              onEdit={() => setEditingSections(prev => ({ ...prev, dailyTargets: true }))}
+              isLoading={isLoading}
+            />
+          </div>
 
-        <CalculatedMetrics profile={editedProfile} />
+          <CalculatedMetrics profile={editedProfile} />
 
-        <ProfileTimestamps
-          createdAt={profile.createdAt}
-          updatedAt={profile.updatedAt}
-        />
+          <ProfileTimestamps
+            createdAt={profile.createdAt}
+            updatedAt={profile.updatedAt}
+          />
+        </div>
       </div>
     </div>
   );
