@@ -1,6 +1,6 @@
 import React from 'react';
 import { Activity, Scale, Heart, TrendingUp, ArrowUpDown } from 'lucide-react';
-import { UserProfile } from '../../../types/profile';
+import type { UserProfile } from '../../../types';
 import { calculateBMI, calculateBMR, getBMICategory } from '../../../utils/calculations';
 import { motion } from 'framer-motion';
 import { useWeightStore } from '../../../stores/weightStore';
@@ -10,7 +10,7 @@ interface CalculatedMetricsProps {
   profile: UserProfile;
 }
 
-export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
+const CalculatedMetrics: React.FC<CalculatedMetricsProps> = ({ profile }) => {
   const currentWeight = useWeightStore(state => state.currentWeight) || profile.currentWeight;
   const { logs } = useLogsStore();
 
@@ -61,8 +61,14 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
 
   // Define metrics based on goal and target weight
   const getThirdMetric = () => {
-    // Show weight to goal if there's a target weight (regardless of goal type)
-    if (profile.targetWeight) {
+    const isWeightLossGoal = profile.primaryGoal === 'weight_loss';
+    const isCustomPlan = !profile.weeklyWeightGoal && profile.primaryGoal !== 'maintenance';
+    const isCustomWeightLoss = isCustomPlan && (profile.dailyCaloriesTarget < (bmr * 1.1)); // Check if in deficit
+
+    // Show weight to goal if:
+    // 1. Guided weight loss plan OR
+    // 2. Custom plan in deficit with target weight set
+    if ((isWeightLossGoal || (isCustomWeightLoss && profile.targetWeight)) && profile.targetWeight) {
       return {
         icon: TrendingUp,
         label: 'Weight to Goal',
@@ -72,7 +78,10 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
       };
     }
 
-    // Show weight fluctuation for maintenance and muscle gain
+    // Show weight fluctuation for:
+    // 1. Maintenance goal
+    // 2. Muscle gain goal
+    // 3. Custom plan not in deficit
     return {
       icon: ArrowUpDown,
       label: '30-Day Fluctuation',
@@ -156,4 +165,6 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
       </div>
     </motion.div>
   );
-}
+};
+
+export { CalculatedMetrics };
