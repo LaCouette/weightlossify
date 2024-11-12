@@ -6,6 +6,7 @@ import { LogsHeader } from './logs/LogsHeader';
 import { LogsTableHeader, type SortConfig, type SortField } from './logs/LogsTableHeader';
 import { LogRow } from './logs/LogRow';
 import { LogsPagination } from './logs/LogsPagination';
+import { LogCard } from './logs/LogCard';
 
 const ITEMS_PER_PAGE = 30;
 
@@ -19,6 +20,16 @@ export function LogsHistory() {
   const [selectedLogs, setSelectedLogs] = useState<Set<string>>(new Set());
   const [isAllPagesSelected, setIsAllPagesSelected] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'date', direction: 'desc' });
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const loadLogs = async () => {
     if (user?.uid) {
@@ -153,13 +164,11 @@ export function LogsHistory() {
   const toggleAllSelection = () => {
     setIsAllPagesSelected(false);
     if (selectedLogs.size === currentLogs.length) {
-      // Deselect all on current page
       const newSelection = new Set([...selectedLogs].filter(id => 
         !currentLogs.find(log => log.id === id)
       ));
       setSelectedLogs(newSelection);
     } else {
-      // Select all on current page
       const newSelection = new Set([
         ...selectedLogs,
         ...currentLogs.map(log => log.id)
@@ -187,7 +196,7 @@ export function LogsHistory() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
       <LogsHeader
         selectedCount={isAllPagesSelected ? logs.length : selectedLogs.size}
         onBulkDelete={handleBulkDelete}
@@ -196,41 +205,65 @@ export function LogsHistory() {
         selectedLogs={selectedLogs}
       />
 
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <LogsTableHeader
-              sortConfig={sortConfig}
-              onSort={handleSort}
-              onToggleSelectAll={toggleAllSelection}
-              onToggleSelectAllPages={toggleSelectAllPages}
-              allSelected={currentLogs.every(log => selectedLogs.has(log.id))}
-              someSelected={currentLogs.some(log => selectedLogs.has(log.id))}
-              isAllPagesSelected={isAllPagesSelected}
-              totalLogs={logs.length}
-              selectedCount={selectedLogs.size}
-            />
-            <tbody className="bg-white divide-y divide-gray-200">
-              {currentLogs.map((log) => (
-                <LogRow
-                  key={log.id}
-                  log={log}
-                  isSelected={selectedLogs.has(log.id)}
-                  isEditing={editingLog === log.id}
-                  editValues={editValues}
-                  onToggleSelect={() => toggleLogSelection(log.id)}
-                  onEdit={() => handleEdit(log)}
-                  onSave={() => handleSave(log.id)}
-                  onCancel={handleCancel}
-                  onDelete={() => handleDelete(log.id)}
-                  onEditValueChange={(field, value) => 
-                    setEditValues(prev => ({ ...prev, [field]: value }))
-                  }
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="mt-4 sm:mt-6 bg-white shadow-sm rounded-lg overflow-hidden">
+        {isMobileView ? (
+          <div className="divide-y divide-gray-200">
+            {currentLogs.map((log) => (
+              <LogCard
+                key={log.id}
+                log={log}
+                isSelected={selectedLogs.has(log.id)}
+                isEditing={editingLog === log.id}
+                editValues={editValues}
+                onToggleSelect={() => toggleLogSelection(log.id)}
+                onEdit={() => handleEdit(log)}
+                onSave={() => handleSave(log.id)}
+                onCancel={handleCancel}
+                onDelete={() => handleDelete(log.id)}
+                onEditValueChange={(field, value) => 
+                  setEditValues(prev => ({ ...prev, [field]: value }))
+                }
+                sortConfig={sortConfig}
+                onSort={handleSort}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <LogsTableHeader
+                sortConfig={sortConfig}
+                onSort={handleSort}
+                onToggleSelectAll={toggleAllSelection}
+                onToggleSelectAllPages={toggleSelectAllPages}
+                allSelected={currentLogs.every(log => selectedLogs.has(log.id))}
+                someSelected={currentLogs.some(log => selectedLogs.has(log.id))}
+                isAllPagesSelected={isAllPagesSelected}
+                totalLogs={logs.length}
+                selectedCount={selectedLogs.size}
+              />
+              <tbody className="bg-white divide-y divide-gray-200">
+                {currentLogs.map((log) => (
+                  <LogRow
+                    key={log.id}
+                    log={log}
+                    isSelected={selectedLogs.has(log.id)}
+                    isEditing={editingLog === log.id}
+                    editValues={editValues}
+                    onToggleSelect={() => toggleLogSelection(log.id)}
+                    onEdit={() => handleEdit(log)}
+                    onSave={() => handleSave(log.id)}
+                    onCancel={handleCancel}
+                    onDelete={() => handleDelete(log.id)}
+                    onEditValueChange={(field, value) => 
+                      setEditValues(prev => ({ ...prev, [field]: value }))
+                    }
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <LogsPagination
           currentPage={currentPage}
