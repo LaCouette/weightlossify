@@ -3,6 +3,7 @@ import { UserProfile } from '../../../../types/profile';
 import { GoalSelection } from './steps/GoalSelection';
 import { WeightLossPlan } from './steps/WeightLossPlan';
 import { TargetAdjustment } from './steps/TargetAdjustment';
+import { CustomTargetAdjustment } from './steps/CustomTargetAdjustment';
 import { useAuthStore } from '../../../../stores/authStore';
 import { useUserStore } from '../../../../stores/userStore';
 
@@ -25,6 +26,7 @@ export function GoalChangeWizard({ currentProfile, onComplete, onCancel }: GoalC
     dailyStepsGoal: currentProfile.dailyStepsGoal,
     dailyCaloriesTarget: currentProfile.dailyCaloriesTarget
   });
+  const [mode, setMode] = useState<'guided' | 'custom'>('guided');
 
   const handleNext = async () => {
     if (step === getMaxSteps()) {
@@ -33,13 +35,11 @@ export function GoalChangeWizard({ currentProfile, onComplete, onCancel }: GoalC
       try {
         setIsSubmitting(true);
         
-        // Update profile in Firestore
         await updateProfile(user.uid, {
           ...updatedProfile,
           updatedAt: new Date()
         });
         
-        // Notify parent component
         onComplete(updatedProfile);
       } catch (error) {
         console.error('Failed to save profile changes:', error);
@@ -60,10 +60,33 @@ export function GoalChangeWizard({ currentProfile, onComplete, onCancel }: GoalC
   };
 
   const getMaxSteps = () => {
+    if (mode === 'custom') return 2; // Selection -> Custom adjustment
     if (updatedProfile.primaryGoal === 'weight_loss') {
-      return 3; // Goal selection -> Weight loss plan -> Target adjustment
+      return 3; // Selection -> Weight loss plan -> Target adjustment
     }
-    return 2; // Goal selection -> Target adjustment
+    return 2; // Selection -> Target adjustment
+  };
+
+  const handleGoalSelect = (goal: string) => {
+    if (goal === 'custom') {
+      setMode('custom');
+      setUpdatedProfile(prev => ({
+        ...prev,
+        primaryGoal: 'maintenance', // Default to maintenance for custom mode
+        weeklyWeightGoal: undefined,
+        targetWeight: undefined
+      }));
+      setStep(2);
+    } else {
+      setMode('guided');
+      setUpdatedProfile(prev => ({
+        ...prev,
+        primaryGoal: goal as 'weight_loss' | 'muscle_gain' | 'maintenance',
+        weeklyWeightGoal: undefined,
+        targetWeight: undefined
+      }));
+      setStep(2);
+    }
   };
 
   const renderStep = () => {
@@ -72,18 +95,23 @@ export function GoalChangeWizard({ currentProfile, onComplete, onCancel }: GoalC
         return (
           <GoalSelection
             currentGoal={updatedProfile.primaryGoal}
-            onChange={(goal) => {
-              setUpdatedProfile(prev => ({
-                ...prev,
-                primaryGoal: goal,
-                // Reset related fields when changing goal
-                weeklyWeightGoal: undefined,
-                targetWeight: undefined
-              }));
-            }}
+            onChange={handleGoalSelect}
           />
         );
       case 2:
+        if (mode === 'custom') {
+          return (
+            <CustomTargetAdjustment
+              profile={updatedProfile}
+              onChange={(updates) => {
+                setUpdatedProfile(prev => ({
+                  ...prev,
+                  ...updates
+                }));
+              }}
+            />
+          );
+        }
         if (updatedProfile.primaryGoal === 'weight_loss') {
           return (
             <WeightLossPlan

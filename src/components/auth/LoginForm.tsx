@@ -7,22 +7,37 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const { signIn, signInWithGoogle, error, loading } = useAuthStore();
 
+  const getErrorMessage = (errorCode: string) => {
+    switch (errorCode) {
+      case 'auth/invalid-credential':
+        return 'Invalid email or password. Please check your credentials and try again.';
+      case 'auth/user-not-found':
+        return 'No account found with this email. Please check your email or sign up.';
+      case 'auth/wrong-password':
+        return 'Incorrect password. Please try again.';
+      case 'auth/too-many-requests':
+        return 'Too many failed attempts. Please try again later or reset your password.';
+      case 'auth/network-request-failed':
+        return 'Network error. Please check your internet connection and try again.';
+      default:
+        return 'An error occurred during sign in. Please try again.';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await signIn(email, password);
-    } catch (error) {
-      // Error is handled by the store
-      console.error('Login failed:', error);
+    } catch (error: any) {
+      console.error('Login error:', error);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
-    } catch (error) {
-      // Error is handled by the store
-      console.error('Google sign-in failed:', error);
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
     }
   };
 
@@ -36,7 +51,9 @@ export function LoginForm() {
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
         {error && (
           <div className="rounded-md bg-red-50 p-4">
-            <p className="text-sm text-red-700">{error}</p>
+            <p className="text-sm text-red-700">
+              {getErrorMessage(error.code || error)}
+            </p>
           </div>
         )}
         <div className="rounded-md shadow-sm -space-y-px">

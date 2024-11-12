@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Target, Scale, Dumbbell, BarChart, Edit2 } from 'lucide-react';
+import { Target, Scale, Dumbbell, BarChart, Edit2, Sliders } from 'lucide-react';
 import { UserProfile } from '../../../types/profile';
 import { GoalChangeWizard } from './goalWizard/GoalChangeWizard';
 import { motion, AnimatePresence } from 'framer-motion';
+import { calculateBMR, calculateBaseMaintenance, calculateNEAT } from '../../../utils/calorieCalculations';
 
 interface GoalsTargetsProps {
   profile: UserProfile;
@@ -23,7 +24,100 @@ export function GoalsTargets({ profile, isEditing, onChange, onEdit }: GoalsTarg
     setShowWizard(false);
   };
 
+  const calculateCalorieChange = () => {
+    const bmr = calculateBMR(
+      profile.currentWeight,
+      profile.height,
+      profile.age,
+      profile.gender,
+      profile.bodyFat
+    );
+    const baseMaintenance = calculateBaseMaintenance(bmr);
+    const neat = calculateNEAT(profile.dailyStepsGoal);
+    const maintenance = baseMaintenance + neat;
+    return profile.dailyCaloriesTarget - maintenance;
+  };
+
+  const getMonthlyChange = () => {
+    const dailyChange = calculateCalorieChange();
+    const monthlyChange = (dailyChange * 30) / 7700; // kg per month
+    return monthlyChange;
+  };
+
+  const isCustomPlan = () => {
+    const calorieChange = calculateCalorieChange();
+    // Check if the calorie change doesn't match the standard plans
+    if (profile.primaryGoal === 'weight_loss') {
+      return Math.abs(calorieChange + 350) > 50 && Math.abs(calorieChange + 600) > 50;
+    }
+    if (profile.primaryGoal === 'muscle_gain') {
+      const expectedSurplus = Math.round(profile.dailyCaloriesTarget * 0.075);
+      return Math.abs(calorieChange - expectedSurplus) > 50;
+    }
+    if (profile.primaryGoal === 'maintenance') {
+      return Math.abs(calorieChange) > 100;
+    }
+    return false;
+  };
+
+  const renderCustomPlan = () => {
+    const calorieChange = calculateCalorieChange();
+    const monthlyChange = getMonthlyChange();
+    const isDeficit = calorieChange < -100;
+    const isSurplus = calorieChange > 100;
+
+    return (
+      <div className="space-y-6">
+        <div className="metric-card">
+          <div className="metric-header">
+            <div className="metric-icon">
+              <Sliders className="h-5 w-5 text-indigo-600" />
+            </div>
+            <span className="metric-title">Your Custom Plan</span>
+          </div>
+          <div className="mt-4 space-y-4">
+            <div className="flex justify-between items-baseline">
+              <span className="text-sm text-gray-600">Daily Target</span>
+              <span className={`text-lg font-semibold ${
+                isDeficit ? 'text-red-600' : 
+                isSurplus ? 'text-green-600' : 
+                'text-indigo-600'
+              }`}>
+                {isDeficit ? '-' : isSurplus ? '+' : ''}
+                {Math.abs(Math.round(calorieChange))} kcal/day
+              </span>
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className="text-sm text-gray-600">Expected Monthly Change</span>
+              <span className={`text-lg font-semibold ${
+                isDeficit ? 'text-red-600' : 
+                isSurplus ? 'text-green-600' : 
+                'text-indigo-600'
+              }`}>
+                {Math.abs(monthlyChange).toFixed(1)} kg {monthlyChange > 0 ? 'gain' : 'loss'}
+              </span>
+            </div>
+            <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 font-medium">
+                {calorieChange > 300 && 'Aggressive bulk phase'}
+                {calorieChange > 100 && calorieChange <= 300 && 'Lean gaining phase'}
+                {calorieChange < -500 && 'Aggressive cut phase'}
+                {calorieChange < -100 && calorieChange >= -500 && 'Moderate fat loss phase'}
+                {Math.abs(calorieChange) <= 100 && 'Maintenance phase'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderGoalContent = () => {
+    // Check if this is a custom plan
+    if (isCustomPlan()) {
+      return renderCustomPlan();
+    }
+
     switch (profile.primaryGoal) {
       case 'weight_loss':
         return (
@@ -52,12 +146,12 @@ export function GoalsTargets({ profile, isEditing, onChange, onEdit }: GoalsTarg
                   <div 
                     className="progress-value"
                     style={{ 
-                      width: `${Math.min(((profile.currentWeight - profile.targetWeight) / profile.currentWeight) * 100, 100)}%` 
+                      width: `${Math.min(((profile.currentWeight - profile.targetWeight!) / profile.currentWeight) * 100, 100)}%` 
                     }}
                   />
                 </div>
                 <div className="text-sm text-gray-600">
-                  {(profile.currentWeight - profile.targetWeight).toFixed(1)}kg to lose
+                  {(profile.currentWeight - profile.targetWeight!).toFixed(1)}kg to lose
                 </div>
               </div>
             </div>
