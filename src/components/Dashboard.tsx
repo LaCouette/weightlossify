@@ -6,9 +6,7 @@ import { WeightMetric } from './dashboard/WeightMetric';
 import { CaloriesMetric } from './dashboard/CaloriesMetric';
 import { StepsMetric } from './dashboard/StepsMetric';
 import { DateRangeSelector } from './dashboard/DateRangeSelector';
-import { QuickLogWidget } from './QuickLogWidget';
 import { calculateDateRange } from '../utils/dateCalculations';
-import { Activity, Scale, Utensils } from 'lucide-react';
 
 type DateRange = 'week' | 'month';
 
@@ -74,43 +72,6 @@ export function Dashboard() {
           dailyTarget={profile.dailyStepsGoal}
           dateRange={dateRange}
           endDate={endDate}
-        />
-      </div>
-
-      {/* Quick Log Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <QuickLogWidget
-          icon={Scale}
-          label="Log Weight"
-          unit="kg"
-          step={0.1}
-          min={30}
-          max={300}
-          defaultValue={profile.currentWeight}
-          field="weight"
-          onLogAdded={refreshLogs}
-        />
-        <QuickLogWidget
-          icon={Utensils}
-          label="Log Calories"
-          unit="kcal"
-          step={50}
-          min={0}
-          max={10000}
-          defaultValue={profile.dailyCaloriesTarget}
-          field="calories"
-          onLogAdded={refreshLogs}
-        />
-        <QuickLogWidget
-          icon={Activity}
-          label="Log Steps"
-          unit="steps"
-          step={100}
-          min={0}
-          max={100000}
-          defaultValue={profile.dailyStepsGoal}
-          field="steps"
-          onLogAdded={refreshLogs}
         />
       </div>
     </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import type { DailyLog } from '../../types';
+import { QuickLogWidget } from '../QuickLogWidget';
 
 interface WeightMetricProps {
   currentWeight: number;
@@ -86,6 +87,20 @@ export function WeightMetric({ currentWeight, targetWeight, logs, dateRange }: W
         {/* Log Count */}
         <div className="text-sm text-gray-500">
           Based on {weightLogs.length} log{weightLogs.length !== 1 ? 's' : ''} this {dateRange}
+        </div>
+
+        {/* Quick Log Widget */}
+        <div className="pt-4 border-t">
+          <QuickLogWidget
+            icon={Scale}
+            label="Log Weight"
+            unit="kg"
+            step={0.1}
+            min={30}
+            max={300}
+            defaultValue={currentWeight}
+            field="weight"
+          />
         </div>
       </div>
     </div>
