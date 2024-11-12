@@ -6,21 +6,22 @@ import {
   onAuthStateChanged,
   User,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  AuthError
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
 interface AuthState {
   user: User | null;
   loading: boolean;
-  error: string | null;
+  error: AuthError | null;
   signInWithGoogle: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
+  setError: (error: AuthError | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -34,7 +35,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } catch (error) {
-      set({ error: (error as Error).message });
+      set({ error: error as AuthError });
       throw error;
     } finally {
       set({ loading: false });
@@ -46,7 +47,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ loading: true, error: null });
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
-      set({ error: (error as Error).message });
+      set({ error: error as AuthError });
       throw error;
     } finally {
       set({ loading: false });
@@ -58,7 +59,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ loading: true, error: null });
       await createUserWithEmailAndPassword(auth, email, password);
     } catch (error) {
-      set({ error: (error as Error).message });
+      set({ error: error as AuthError });
       throw error;
     } finally {
       set({ loading: false });
@@ -71,7 +72,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       await firebaseSignOut(auth);
       set({ user: null });
     } catch (error) {
-      set({ error: (error as Error).message });
+      set({ error: error as AuthError });
       throw error;
     } finally {
       set({ loading: false });

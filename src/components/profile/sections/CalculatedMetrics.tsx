@@ -1,18 +1,20 @@
 import React from 'react';
-import { Activity, Scale, Heart, Target } from 'lucide-react';
+import { Activity, Scale, Heart, TrendingUp, ArrowUpDown } from 'lucide-react';
 import { UserProfile } from '../../../types/profile';
 import { calculateBMI, calculateBMR, getBMICategory } from '../../../utils/calculations';
 import { motion } from 'framer-motion';
 import { useWeightStore } from '../../../stores/weightStore';
+import { useLogsStore } from '../../../stores/logsStore';
 
 interface CalculatedMetricsProps {
   profile: UserProfile;
 }
 
 export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
-  // Use the global weight state for calculations
   const currentWeight = useWeightStore(state => state.currentWeight) || profile.currentWeight;
+  const { logs } = useLogsStore();
 
+  // Calculate BMI and BMR
   const bmi = calculateBMI(currentWeight, profile.height);
   const bmiCategory = getBMICategory(bmi);
   const bmr = calculateBMR(
@@ -22,6 +24,25 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
     profile.gender,
     profile.bodyFat
   );
+
+  // Calculate weight fluctuation for maintenance/muscle gain
+  const getWeightFluctuation = () => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentLogs = logs
+      .filter(log => new Date(log.date) >= thirtyDaysAgo && log.weight)
+      .map(log => log.weight!)
+      .sort((a, b) => a - b);
+
+    if (recentLogs.length < 2) return null;
+
+    const minWeight = recentLogs[0];
+    const maxWeight = recentLogs[recentLogs.length - 1];
+    return maxWeight - minWeight;
+  };
+
+  const weightFluctuation = getWeightFluctuation();
 
   const getBmiColor = (category: string) => {
     switch (category) {
@@ -36,6 +57,31 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
       default:
         return 'bg-gray-500';
     }
+  };
+
+  // Define metrics based on goal and target weight
+  const getThirdMetric = () => {
+    // Show weight to goal if there's a target weight (regardless of goal type)
+    if (profile.targetWeight) {
+      return {
+        icon: TrendingUp,
+        label: 'Weight to Goal',
+        value: Math.abs(currentWeight - profile.targetWeight).toFixed(1),
+        subtext: 'kg remaining',
+        indicator: 'bg-indigo-500'
+      };
+    }
+
+    // Show weight fluctuation for maintenance and muscle gain
+    return {
+      icon: ArrowUpDown,
+      label: '30-Day Fluctuation',
+      value: weightFluctuation ? weightFluctuation.toFixed(1) : '-',
+      subtext: weightFluctuation ? 
+        `${weightFluctuation <= 1 ? 'Stable' : 'Variable'} weight` : 
+        'Insufficient data',
+      indicator: weightFluctuation && weightFluctuation <= 1 ? 'bg-green-500' : 'bg-yellow-500'
+    };
   };
 
   const metrics = [
@@ -53,15 +99,7 @@ export function CalculatedMetrics({ profile }: CalculatedMetricsProps) {
       subtext: 'calories/day',
       indicator: 'bg-rose-500'
     },
-    {
-      icon: Target,
-      label: 'Weight to Goal',
-      value: profile.targetWeight 
-        ? Math.abs(currentWeight - profile.targetWeight).toFixed(1)
-        : '-',
-      subtext: 'kg remaining',
-      indicator: 'bg-indigo-500'
-    }
+    getThirdMetric()
   ];
 
   return (
