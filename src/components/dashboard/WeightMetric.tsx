@@ -3,6 +3,7 @@ import { Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import type { DailyLog } from '../../types';
 import { QuickLogWidget } from '../QuickLogWidget';
 import { formatWeight, roundWeight } from '../../utils/weightFormatting';
+import { calculateCurrentAverageWeight, getWeightChange } from '../../utils/weightCalculations';
 
 interface WeightMetricProps {
   currentWeight: number;
@@ -16,15 +17,27 @@ export function WeightMetric({ currentWeight, targetWeight, logs, dateRange }: W
     .filter(log => typeof log.weight === 'number')
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const latestLogWeight = weightLogs.length > 0 ? roundWeight(Number(weightLogs[0].weight)) : roundWeight(Number(currentWeight));
-  const oldestLogWeight = weightLogs.length > 0 ? roundWeight(Number(weightLogs[weightLogs.length - 1].weight)) : roundWeight(Number(currentWeight));
+  // Calculate current week's average weight
+  const averageWeight = calculateCurrentAverageWeight(logs) || roundWeight(currentWeight);
   
-  const weightChange = roundWeight(latestLogWeight - oldestLogWeight);
-  const weightChangePercent = (weightChange / oldestLogWeight) * 100;
+  // Get oldest log weight for comparison
+  const oldestLogWeight = weightLogs.length > 0 
+    ? roundWeight(Number(weightLogs[weightLogs.length - 1].weight)) 
+    : roundWeight(Number(currentWeight));
+  
+  // Calculate weight change
+  const { change: weightChange, percentage: weightChangePercent } = getWeightChange(averageWeight, oldestLogWeight);
 
   const progressToTarget = targetWeight
     ? ((currentWeight - targetWeight) / (oldestLogWeight - targetWeight)) * 100
     : 0;
+
+  // Get number of logs this week
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Monday
+  weekStart.setHours(0, 0, 0, 0);
+  
+  const weekLogs = weightLogs.filter(log => new Date(log.date) >= weekStart);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -36,10 +49,13 @@ export function WeightMetric({ currentWeight, targetWeight, logs, dateRange }: W
       </div>
 
       <div className="space-y-6">
-        {/* Current Weight */}
+        {/* Current Average Weight */}
         <div>
           <div className="text-3xl font-bold text-gray-900">
-            {formatWeight(latestLogWeight)} kg
+            {formatWeight(averageWeight)} kg
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            Current week average ({weekLogs.length} log{weekLogs.length !== 1 ? 's' : ''})
           </div>
           <div className="flex items-center gap-2 mt-2">
             {weightChange !== 0 && (
@@ -79,7 +95,7 @@ export function WeightMetric({ currentWeight, targetWeight, logs, dateRange }: W
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Target: {formatWeight(targetWeight)} kg</span>
               <span className="text-gray-500">
-                {formatWeight(Math.abs(latestLogWeight - targetWeight))} kg to go
+                {formatWeight(Math.abs(averageWeight - targetWeight))} kg to go
               </span>
             </div>
           </div>

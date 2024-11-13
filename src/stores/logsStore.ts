@@ -9,7 +9,6 @@ import {
   query,
   orderBy,
   writeBatch,
-  where,
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -35,13 +34,13 @@ export const useLogsStore = create<LogsState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const logsRef = collection(db, `users/${userId}/logs`);
-      const q = query(logsRef, orderBy('date', 'desc')); // Removed limit(100)
+      const q = query(logsRef, orderBy('date', 'desc'));
       const querySnapshot = await getDocs(q);
       
       const logs = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
-          id: doc.id,
+          id: doc.id, // Use Firestore's auto-generated ID
           date: data.date,
           weight: typeof data.weight === 'number' ? Number(data.weight) : undefined,
           calories: typeof data.calories === 'number' ? Number(data.calories) : undefined,
@@ -77,7 +76,8 @@ export const useLogsStore = create<LogsState>((set, get) => ({
         steps: typeof logData.steps === 'number' ? Number(logData.steps) : null
       };
 
-      await addDoc(logsRef, validatedData);
+      // Use addDoc to let Firestore generate the ID
+      const docRef = await addDoc(logsRef, validatedData);
       
       // Refresh logs
       await get().fetchLogs(userId);

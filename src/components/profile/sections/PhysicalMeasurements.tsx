@@ -3,6 +3,9 @@ import { Ruler, Scale, Activity, Percent, Edit2 } from 'lucide-react';
 import { UserProfile } from '../../../types/profile';
 import { motion } from 'framer-motion';
 import { useWeightStore } from '../../../stores/weightStore';
+import { useLogsStore } from '../../../stores/logsStore';
+import { calculateCurrentAverageWeight } from '../../../utils/weightCalculations';
+import { formatWeight, WEIGHT_STEP } from '../../../utils/weightFormatting';
 
 interface PhysicalMeasurementsProps {
   profile: UserProfile;
@@ -23,8 +26,12 @@ export function PhysicalMeasurements({
   onCancel,
   onEdit
 }: PhysicalMeasurementsProps) {
-  // Use the global weight state instead of profile weight
-  const currentWeight = useWeightStore(state => state.currentWeight);
+  // Get logs for average weight calculation
+  const { logs } = useLogsStore();
+  
+  // Calculate current average weight
+  const averageWeight = calculateCurrentAverageWeight(logs);
+  const displayWeight = averageWeight || profile.currentWeight;
 
   return (
     <motion.div 
@@ -78,18 +85,23 @@ export function PhysicalMeasurements({
               <input
                 type="number"
                 name="currentWeight"
-                value={isEditing ? profile.currentWeight : (currentWeight || profile.currentWeight)}
+                value={isEditing ? profile.currentWeight : displayWeight}
                 onChange={onChange}
                 disabled={!isEditing}
                 min="40"
                 max="200"
-                step="0.1"
+                step={WEIGHT_STEP}
                 className="input-field text-center"
                 placeholder="Weight"
               />
             </div>
             <span className="text-sm text-gray-600">kg</span>
           </div>
+          {!isEditing && averageWeight && (
+            <div className="mt-1 text-sm text-gray-500">
+              Current week average
+            </div>
+          )}
         </div>
 
         <div className="input-group">
