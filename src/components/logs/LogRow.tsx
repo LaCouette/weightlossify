@@ -1,6 +1,7 @@
 import React from 'react';
 import { Edit2, Save, X, Trash2, CheckSquare, Square } from 'lucide-react';
 import type { DailyLog } from '../../types';
+import { formatWeight, WEIGHT_STEP } from '../../utils/weightFormatting';
 
 interface LogRowProps {
   log: DailyLog;
@@ -12,7 +13,7 @@ interface LogRowProps {
   onSave: () => void;
   onCancel: () => void;
   onDelete: () => void;
-  onEditValueChange: (field: keyof DailyLog, value: number) => void;
+  onEditValuesChange: (updates: Partial<DailyLog>) => void;
 }
 
 export function LogRow({
@@ -25,7 +26,7 @@ export function LogRow({
   onSave,
   onCancel,
   onDelete,
-  onEditValueChange
+  onEditValuesChange
 }: LogRowProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -36,11 +37,6 @@ export function LogRow({
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const formatWeight = (weight: number | undefined): string => {
-    if (typeof weight !== 'number') return '-';
-    return weight.toFixed(1);
   };
 
   return (
@@ -65,9 +61,9 @@ export function LogRow({
           <input
             type="number"
             value={editValues.weight || ''}
-            onChange={(e) => onEditValueChange('weight', Number(e.target.value))}
+            onChange={(e) => onEditValuesChange({ weight: Number(e.target.value) })}
             className="w-20 sm:w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
-            step="0.1"
+            step={WEIGHT_STEP}
           />
         ) : (
           formatWeight(log.weight)
@@ -78,7 +74,7 @@ export function LogRow({
           <input
             type="number"
             value={editValues.calories || ''}
-            onChange={(e) => onEditValueChange('calories', Number(e.target.value))}
+            onChange={(e) => onEditValuesChange({ calories: Number(e.target.value) })}
             className="w-20 sm:w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
           />
         ) : (
@@ -90,7 +86,7 @@ export function LogRow({
           <input
             type="number"
             value={editValues.steps || ''}
-            onChange={(e) => onEditValueChange('steps', Number(e.target.value))}
+            onChange={(e) => onEditValuesChange({ steps: Number(e.target.value) })}
             className="w-20 sm:w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
           />
         ) : (

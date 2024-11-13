@@ -7,6 +7,7 @@ import { LogsTableHeader, type SortConfig, type SortField } from './logs/LogsTab
 import { LogRow } from './logs/LogRow';
 import { LogsPagination } from './logs/LogsPagination';
 import { AlertDialog } from './logs/AlertDialog';
+import { roundWeight } from '../utils/weightFormatting';
 
 const ITEMS_PER_PAGE = 30;
 
@@ -85,9 +86,9 @@ export function LogsHistory() {
   const handleEdit = (log: DailyLog) => {
     setEditingLog(log.id);
     setEditValues({
-      weight: log.weight || undefined,
-      calories: log.calories || undefined,
-      steps: log.steps || undefined
+      weight: log.weight,
+      calories: log.calories,
+      steps: log.steps
     });
   };
 
@@ -95,7 +96,13 @@ export function LogsHistory() {
     if (!user?.uid) return;
 
     try {
-      await updateLog(user.uid, logId, editValues);
+      // If weight is present, ensure it's rounded properly
+      const updatedValues = {
+        ...editValues,
+        weight: editValues.weight ? roundWeight(editValues.weight) : editValues.weight
+      };
+
+      await updateLog(user.uid, logId, updatedValues);
       setEditingLog(null);
       setEditValues({});
     } catch (error) {
@@ -218,9 +225,7 @@ export function LogsHistory() {
                   onSave={() => handleSave(log.id)}
                   onCancel={handleCancel}
                   onDelete={() => setDeleteConfirm({ isOpen: true, type: 'single', logId: log.id })}
-                  onEditValueChange={(field, value) => 
-                    setEditValues(prev => ({ ...prev, [field]: value }))
-                  }
+                  onEditValuesChange={setEditValues}
                 />
               ))}
             </tbody>

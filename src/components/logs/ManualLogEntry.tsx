@@ -3,6 +3,7 @@ import { Plus, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useLogsStore } from '../../stores/logsStore';
 import { useWeightStore } from '../../stores/weightStore';
+import { formatWeight, parseWeight, validateWeight, WEIGHT_STEP } from '../../utils/weightFormatting';
 
 interface ManualLogEntryProps {
   onComplete: () => void;
@@ -31,10 +32,15 @@ export function ManualLogEntry({ onComplete }: ManualLogEntryProps) {
       setIsSubmitting(true);
       setError(null);
 
+      // Validate weight format if provided
+      if (formData.weight && !validateWeight(formData.weight)) {
+        throw new Error('Invalid weight format. Please use increments of 0.05');
+      }
+
       // Convert form values to numbers or null
       const logData = {
         date: new Date(formData.date).toISOString(),
-        weight: formData.weight ? Number(formData.weight) : null,
+        weight: formData.weight ? parseWeight(formData.weight) : null,
         calories: formData.calories ? Number(formData.calories) : null,
         steps: formData.steps ? Number(formData.steps) : null,
         createdAt: new Date(),
@@ -124,7 +130,7 @@ export function ManualLogEntry({ onComplete }: ManualLogEntryProps) {
             name="weight"
             value={formData.weight}
             onChange={handleChange}
-            step="0.1"
+            step={WEIGHT_STEP}
             min="30"
             max="300"
             placeholder="Enter weight"
