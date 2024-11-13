@@ -2,6 +2,7 @@ import React from 'react';
 import { Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import type { DailyLog } from '../../types';
 import { QuickLogWidget } from '../QuickLogWidget';
+import { formatWeight, roundWeight } from '../../utils/weightFormatting';
 
 interface WeightMetricProps {
   currentWeight: number;
@@ -15,10 +16,10 @@ export function WeightMetric({ currentWeight, targetWeight, logs, dateRange }: W
     .filter(log => typeof log.weight === 'number')
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const latestLogWeight = weightLogs.length > 0 ? Number(weightLogs[0].weight) : Number(currentWeight);
-  const oldestLogWeight = weightLogs.length > 0 ? Number(weightLogs[weightLogs.length - 1].weight) : Number(currentWeight);
+  const latestLogWeight = weightLogs.length > 0 ? roundWeight(Number(weightLogs[0].weight)) : roundWeight(Number(currentWeight));
+  const oldestLogWeight = weightLogs.length > 0 ? roundWeight(Number(weightLogs[weightLogs.length - 1].weight)) : roundWeight(Number(currentWeight));
   
-  const weightChange = latestLogWeight - oldestLogWeight;
+  const weightChange = roundWeight(latestLogWeight - oldestLogWeight);
   const weightChangePercent = (weightChange / oldestLogWeight) * 100;
 
   const progressToTarget = targetWeight
@@ -38,7 +39,7 @@ export function WeightMetric({ currentWeight, targetWeight, logs, dateRange }: W
         {/* Current Weight */}
         <div>
           <div className="text-3xl font-bold text-gray-900">
-            {Number(latestLogWeight).toFixed(1)} kg
+            {formatWeight(latestLogWeight)} kg
           </div>
           <div className="flex items-center gap-2 mt-2">
             {weightChange !== 0 && (
@@ -51,7 +52,7 @@ export function WeightMetric({ currentWeight, targetWeight, logs, dateRange }: W
                 <span className={`text-sm font-medium ${
                   weightChange > 0 ? 'text-red-500' : 'text-green-500'
                 }`}>
-                  {Math.abs(weightChange).toFixed(1)} kg
+                  {Math.abs(weightChange).toFixed(2)} kg
                   ({Math.abs(weightChangePercent).toFixed(1)}%)
                 </span>
                 <span className="text-sm text-gray-500">
@@ -76,9 +77,9 @@ export function WeightMetric({ currentWeight, targetWeight, logs, dateRange }: W
               />
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Target: {targetWeight} kg</span>
+              <span className="text-gray-500">Target: {formatWeight(targetWeight)} kg</span>
               <span className="text-gray-500">
-                {Math.abs(latestLogWeight - targetWeight).toFixed(1)} kg to go
+                {formatWeight(Math.abs(latestLogWeight - targetWeight))} kg to go
               </span>
             </div>
           </div>
@@ -95,7 +96,7 @@ export function WeightMetric({ currentWeight, targetWeight, logs, dateRange }: W
             icon={Scale}
             label="Log Weight"
             unit="kg"
-            step={0.1}
+            step={0.05}
             min={30}
             max={300}
             defaultValue={currentWeight}
