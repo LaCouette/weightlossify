@@ -20,7 +20,6 @@ export function ProfileSetup() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [isCustomPlan, setIsCustomPlan] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     email: user?.email || '',
     name: '',
@@ -31,8 +30,8 @@ export function ProfileSetup() {
     bodyFat: 0,
     activityLevel: '',
     primaryGoal: '',
-    targetWeight: undefined,
-    weeklyWeightGoal: undefined,
+    targetWeight: 0,
+    weeklyWeightGoal: '',
     dailyStepsGoal: 0,
     dailyCaloriesTarget: 0
   });
@@ -51,8 +50,8 @@ export function ProfileSetup() {
         bodyFat: profile.bodyFat || 0,
         activityLevel: profile.activityLevel,
         primaryGoal: profile.primaryGoal,
-        targetWeight: profile.targetWeight,
-        weeklyWeightGoal: profile.weeklyWeightGoal,
+        targetWeight: profile.targetWeight || 0,
+        weeklyWeightGoal: profile.weeklyWeightGoal || '',
         dailyStepsGoal: profile.dailyStepsGoal,
         dailyCaloriesTarget: profile.dailyCaloriesTarget
       });
@@ -64,29 +63,17 @@ export function ProfileSetup() {
     setFormData(prev => ({
       ...prev,
       [name]: ['age', 'height', 'currentWeight', 'targetWeight', 'dailyStepsGoal', 'dailyCaloriesTarget', 'bodyFat']
-        .includes(name) ? Number(value) || undefined : value
+        .includes(name) ? Number(value) : value
     }));
   };
 
-  const handleNext = async (e: React.FormEvent) => {
+  const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // If using custom plan and completing step 3, submit directly
-    if (isCustomPlan && step === 3) {
-      await handleSubmit(e);
-    } else if (step < getMaxSteps()) {
-      setStep(prev => prev + 1);
-    } else {
-      await handleSubmit(e);
-    }
+    setStep(prev => prev + 1);
   };
 
   const handleBack = () => {
-    if (step === 1) {
-      setShowCancelConfirm(true);
-    } else {
-      setStep(prev => prev - 1);
-    }
+    setStep(prev => prev - 1);
   };
 
   const handleCancel = async () => {
@@ -115,17 +102,6 @@ export function ProfileSetup() {
     try {
       setIsSubmitting(true);
 
-      // Prepare profile data
-      const profileData = {
-        ...formData,
-        // Remove targetWeight and weeklyWeightGoal for maintenance goal
-        targetWeight: formData.primaryGoal === 'maintenance' ? undefined : formData.targetWeight,
-        weeklyWeightGoal: formData.primaryGoal === 'maintenance' ? undefined : formData.weeklyWeightGoal,
-        setupCompleted: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
       // Create weight log entry if weight changed
       if (formData.currentWeight > 0) {
         // Add weight log
@@ -141,7 +117,12 @@ export function ProfileSetup() {
       }
 
       // Save profile
-      await addProfile(user.uid, profileData);
+      await addProfile(user.uid, {
+        ...formData,
+        setupCompleted: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
 
       navigate('/');
     } catch (error) {
@@ -151,8 +132,6 @@ export function ProfileSetup() {
     }
   };
 
-  const getMaxSteps = () => isCustomPlan ? 3 : 5;
-
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -160,17 +139,11 @@ export function ProfileSetup() {
       case 2:
         return <Step2 formData={formData} onChange={handleChange} />;
       case 3:
-        return (
-          <Step3 
-            formData={formData} 
-            onChange={handleChange}
-            onCustomPlanSelect={() => setIsCustomPlan(true)}
-          />
-        );
+        return <Step3 formData={formData} onChange={handleChange} />;
       case 4:
         return <Step4 formData={formData} onChange={handleChange} />;
       case 5:
-        return !isCustomPlan ? <Step5 formData={formData} onChange={handleChange} /> : null;
+        return <Step5 formData={formData} onChange={handleChange} />;
       default:
         return null;
     }
@@ -184,29 +157,40 @@ export function ProfileSetup() {
             {profile ? 'Update Your Profile' : "Let's set up your profile"}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Step {step} of {getMaxSteps()}
+            Step {step} of 5
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleNext}>
+        <form className="mt-8 space-y-6" onSubmit={step < 5 ? handleNext : handleSubmit}>
           {renderStep()}
 
           <div className="flex justify-between space-x-4">
-            <button
-              type="button"
-              onClick={handleBack}
-              disabled={isSubmitting}
-              className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {step === 1 ? 'Cancel' : 'Back'}
-            </button>
+            {step > 1 ? (
+              <button
+                type="button"
+                onClick={handleBack}
+                disabled={isSubmitting}
+                className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              >
+                Back
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowCancelConfirm(true)}
+                disabled={isSubmitting}
+                className="flex-1 py-2 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+              >
+                Cancel Setup
+              </button>
+            )}
             
             <button
               type="submit"
               disabled={isSubmitting}
               className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {step < getMaxSteps() ? 'Next' : (isSubmitting ? 'Saving...' : 'Complete Setup')}
+              {step < 5 ? 'Next' : (isSubmitting ? 'Saving...' : 'Complete Setup')}
             </button>
           </div>
         </form>

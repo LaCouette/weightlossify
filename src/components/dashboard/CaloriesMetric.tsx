@@ -89,7 +89,7 @@ export function CaloriesMetric({ logs, dailyTarget, dateRange, endDate }: Calori
           </div>
         )}
 
-        {/* Quick Logs Widget */}
+        {/* Quick Log Widget */}
         <div className="pt-4 border-t">
           <QuickLogWidget
             icon={Utensils}

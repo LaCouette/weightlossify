@@ -51,7 +51,7 @@ export function WeightMetric({ currentWeight, targetWeight, logs, dateRange }: W
                 <span className={`text-sm font-medium ${
                   weightChange > 0 ? 'text-red-500' : 'text-green-500'
                 }`}>
-                  {Math.abs(weightChange).toFixed(1)} kg
+                  {Math.abs(weightChange).toFixed(1)} kgs
                   ({Math.abs(weightChangePercent).toFixed(1)}%)
                 </span>
                 <span className="text-sm text-gray-500">

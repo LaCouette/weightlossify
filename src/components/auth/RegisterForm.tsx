@@ -16,13 +16,34 @@ export function RegisterForm() {
     }
   }, [user, navigate]);
 
+  const getErrorMessage = (error: any): string => {
+    if (!error) return '';
+    
+    switch (error.code) {
+      case 'auth/email-already-in-use':
+        return 'An account with this email already exists.';
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
+      case 'auth/weak-password':
+        return 'Password should be at least 6 characters long.';
+      case 'auth/network-request-failed':
+        return 'Network error. Please check your internet connection and try again.';
+      default:
+        return error.message || 'An error occurred during registration. Please try again.';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       alert('Passwords do not match');
       return;
     }
-    await signUp(email, password);
+    try {
+      await signUp(email, password);
+    } catch (err) {
+      console.error('Registration error:', err);
+    }
   };
 
   return (
@@ -35,7 +56,7 @@ export function RegisterForm() {
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
         {error && (
           <div className="rounded-md bg-red-50 p-4">
-            <p className="text-sm text-red-700">{error}</p>
+            <p className="text-sm text-red-700">{getErrorMessage(error)}</p>
           </div>
         )}
         <div className="rounded-md shadow-sm -space-y-px">

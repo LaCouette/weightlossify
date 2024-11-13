@@ -7,8 +7,10 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const { signIn, signInWithGoogle, error, loading } = useAuthStore();
 
-  const getErrorMessage = (errorCode: string) => {
-    switch (errorCode) {
+  const getErrorMessage = (error: any): string => {
+    if (!error) return '';
+    
+    switch (error.code) {
       case 'auth/invalid-credential':
         return 'Invalid email or password. Please check your credentials and try again.';
       case 'auth/user-not-found':
@@ -20,7 +22,7 @@ export function LoginForm() {
       case 'auth/network-request-failed':
         return 'Network error. Please check your internet connection and try again.';
       default:
-        return 'An error occurred during sign in. Please try again.';
+        return error.message || 'An error occurred during sign in. Please try again.';
     }
   };
 
@@ -28,16 +30,16 @@ export function LoginForm() {
     e.preventDefault();
     try {
       await signIn(email, password);
-    } catch (error: any) {
-      console.error('Login error:', error);
+    } catch (err) {
+      console.error('Login error:', err);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
-    } catch (error: any) {
-      console.error('Google sign-in error:', error);
+    } catch (err) {
+      console.error('Google sign-in error:', err);
     }
   };
 
@@ -52,7 +54,7 @@ export function LoginForm() {
         {error && (
           <div className="rounded-md bg-red-50 p-4">
             <p className="text-sm text-red-700">
-              {getErrorMessage(error.code || error)}
+              {getErrorMessage(error)}
             </p>
           </div>
         )}

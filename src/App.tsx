@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
+import { BottomNav } from './components/navigation/BottomNav';
 import { Dashboard } from './components/Dashboard';
 import { AuthPage } from './components/auth/AuthPage';
 import { ProfileSetup } from './components/profile/ProfileSetup';
@@ -31,12 +32,13 @@ export function App() {
             path="/profile"
             element={
               <PrivateRoute>
-                <>
+                <div className="flex flex-col min-h-screen pb-16 md:pb-0">
                   <Header />
                   <main className="container mx-auto px-4 py-8">
                     <Profile />
                   </main>
-                </>
+                  <BottomNav />
+                </div>
               </PrivateRoute>
             }
           />
@@ -44,12 +46,13 @@ export function App() {
             path="/logs"
             element={
               <PrivateRoute>
-                <>
+                <div className="flex flex-col min-h-screen pb-16 md:pb-0">
                   <Header />
                   <main className="container mx-auto px-4 py-8">
                     <LogsHistory />
                   </main>
-                </>
+                  <BottomNav />
+                </div>
               </PrivateRoute>
             }
           />
@@ -57,12 +60,13 @@ export function App() {
             path="/calculator"
             element={
               <PrivateRoute>
-                <>
+                <div className="flex flex-col min-h-screen pb-16 md:pb-0">
                   <Header />
                   <main className="container mx-auto px-4 py-8">
                     <Calculator />
                   </main>
-                </>
+                  <BottomNav />
+                </div>
               </PrivateRoute>
             }
           />
@@ -70,12 +74,13 @@ export function App() {
             path="/"
             element={
               <PrivateRoute>
-                <>
+                <div className="flex flex-col min-h-screen pb-16 md:pb-0">
                   <Header />
                   <main className="container mx-auto px-4 py-8">
                     <Dashboard />
                   </main>
-                </>
+                  <BottomNav />
+                </div>
               </PrivateRoute>
             }
           />

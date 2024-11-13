@@ -45,7 +45,7 @@ export function LogRow({
 
   return (
     <tr className={`hover:bg-gray-50 ${isSelected ? 'bg-indigo-50' : ''}`}>
-      <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap">
         <button
           onClick={onToggleSelect}
           className="text-gray-400 hover:text-indigo-600"
@@ -57,60 +57,60 @@ export function LogRow({
           )}
         </button>
       </td>
-      <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         {formatDate(log.date)}
       </td>
-      <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+      <td className="px-6 py-4 whitespace-nowrap text-sm">
         {isEditing ? (
           <input
             type="number"
             value={editValues.weight || ''}
             onChange={(e) => onEditValueChange('weight', Number(e.target.value))}
-            className="w-20 sm:w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
+            className="w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
             step="0.1"
           />
         ) : (
           formatWeight(log.weight)
         )}
       </td>
-      <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+      <td className="px-6 py-4 whitespace-nowrap text-sm">
         {isEditing ? (
           <input
             type="number"
             value={editValues.calories || ''}
             onChange={(e) => onEditValueChange('calories', Number(e.target.value))}
-            className="w-20 sm:w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
+            className="w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
           />
         ) : (
           log.calories?.toLocaleString() || '-'
         )}
       </td>
-      <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+      <td className="px-6 py-4 whitespace-nowrap text-sm">
         {isEditing ? (
           <input
             type="number"
             value={editValues.steps || ''}
             onChange={(e) => onEditValueChange('steps', Number(e.target.value))}
-            className="w-20 sm:w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
+            className="w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
           />
         ) : (
           log.steps?.toLocaleString() || '-'
         )}
       </td>
-      <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+      <td className="px-6 py-4 whitespace-nowrap text-sm">
         {isEditing ? (
           <div className="flex items-center gap-2">
             <button
               onClick={onSave}
               className="text-green-600 hover:text-green-700"
             >
-              <Save className="h-4 sm:h-5 w-4 sm:w-5" />
+              <Save className="h-5 w-5" />
             </button>
             <button
               onClick={onCancel}
               className="text-red-600 hover:text-red-700"
             >
-              <X className="h-4 sm:h-5 w-4 sm:w-5" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         ) : (
@@ -119,13 +119,13 @@ export function LogRow({
               onClick={onEdit}
               className="text-indigo-600 hover:text-indigo-700"
             >
-              <Edit2 className="h-4 sm:h-5 w-4 sm:w-5" />
+              <Edit2 className="h-5 w-5" />
             </button>
             <button
               onClick={onDelete}
               className="text-red-600 hover:text-red-700"
             >
-              <Trash2 className="h-4 sm:h-5 w-4 sm:w-5" />
+              <Trash2 className="h-5 w-5" />
             </button>
           </div>
         )}

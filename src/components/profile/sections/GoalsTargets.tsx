@@ -24,27 +24,6 @@ export function GoalsTargets({ profile, isEditing, onChange, onEdit }: GoalsTarg
     setShowWizard(false);
   };
 
-  const getPlanTitle = () => {
-    // For custom plans
-    if (!profile.weeklyWeightGoal && profile.primaryGoal !== 'maintenance') {
-      return 'Your Custom Plan';
-    }
-
-    // For guided plans
-    switch (profile.primaryGoal) {
-      case 'weight_loss':
-        return profile.weeklyWeightGoal === '0.35' 
-          ? 'Moderate Weight Loss Plan'
-          : 'Aggressive Weight Loss Plan';
-      case 'muscle_gain':
-        return 'Lean Muscle Growth Plan';
-      case 'maintenance':
-        return 'Weight Maintenance Plan';
-      default:
-        return 'Your Plan';
-    }
-  };
-
   const calculateCalorieChange = () => {
     const bmr = calculateBMR(
       profile.currentWeight,
@@ -148,7 +127,7 @@ export function GoalsTargets({ profile, isEditing, onChange, onEdit }: GoalsTarg
                 <div className="metric-icon">
                   <Scale className="h-5 w-5 text-indigo-600" />
                 </div>
-                <span className="metric-title">{getPlanTitle()}</span>
+                <span className="metric-title">Weight Loss Plan</span>
               </div>
               <div className="mt-4 space-y-4">
                 <div className="flex justify-between items-baseline">
@@ -187,7 +166,7 @@ export function GoalsTargets({ profile, isEditing, onChange, onEdit }: GoalsTarg
                 <div className="metric-icon">
                   <Dumbbell className="h-5 w-5 text-indigo-600" />
                 </div>
-                <span className="metric-title">{getPlanTitle()}</span>
+                <span className="metric-title">Muscle Gain Plan</span>
               </div>
               <div className="mt-4 space-y-4">
                 <div className="flex justify-between items-baseline">
@@ -215,7 +194,7 @@ export function GoalsTargets({ profile, isEditing, onChange, onEdit }: GoalsTarg
                 <div className="metric-icon">
                   <BarChart className="h-5 w-5 text-indigo-600" />
                 </div>
-                <span className="metric-title">{getPlanTitle()}</span>
+                <span className="metric-title">Maintenance Plan</span>
               </div>
               <div className="mt-4 space-y-4">
                 <div className="flex justify-between items-baseline">
