@@ -3,6 +3,7 @@ import { Ruler, Scale, Activity, Percent, Edit2 } from 'lucide-react';
 import { UserProfile } from '../../../types/profile';
 import { motion } from 'framer-motion';
 import { useWeightStore } from '../../../stores/weightStore';
+import { formatWeight, WEIGHT_STEP } from '../../../utils/weightFormatting';
 
 interface PhysicalMeasurementsProps {
   profile: UserProfile;
@@ -78,12 +79,12 @@ export function PhysicalMeasurements({
               <input
                 type="number"
                 name="currentWeight"
-                value={isEditing ? profile.currentWeight : (currentWeight || profile.currentWeight)}
+                value={isEditing ? profile.currentWeight : formatWeight(currentWeight || profile.currentWeight)}
                 onChange={onChange}
                 disabled={!isEditing}
                 min="40"
                 max="200"
-                step="0.1"
+                step={WEIGHT_STEP}
                 className="input-field text-center"
                 placeholder="Weight"
               />

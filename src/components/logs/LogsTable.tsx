@@ -3,6 +3,7 @@ import { Edit2, Save, X, Trash2, CheckSquare, Square, ArrowUpDown, ArrowUp, Arro
 import type { DailyLog } from '../../types';
 import { LogsTableRow } from './LogsTableRow';
 import { SortConfig } from '../../hooks/useSortLogs';
+import { formatWeight } from '../../utils/weightFormatting';
 
 interface LogsTableProps {
   logs: DailyLog[];

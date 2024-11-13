@@ -3,6 +3,7 @@ import { Plus, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useLogsStore } from '../../stores/logsStore';
 import { useWeightStore } from '../../stores/weightStore';
+import { roundWeight } from '../../utils/weightFormatting';
 
 interface ManualLogEntryProps {
   onComplete: () => void;
@@ -34,7 +35,7 @@ export function ManualLogEntry({ onComplete }: ManualLogEntryProps) {
       // Convert form values to numbers or null
       const logData = {
         date: new Date(formData.date).toISOString(),
-        weight: formData.weight ? Number(formData.weight) : null,
+        weight: formData.weight ? roundWeight(Number(formData.weight)) : null,
         calories: formData.calories ? Number(formData.calories) : null,
         steps: formData.steps ? Number(formData.steps) : null,
         createdAt: new Date(),
@@ -71,6 +72,15 @@ export function ManualLogEntry({ onComplete }: ManualLogEntryProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
+    // Allow direct input of any two decimal places for weight
+    if (name === 'weight') {
+      // Only allow numbers and one decimal point
+      if (!/^\d*\.?\d{0,2}$/.test(value) && value !== '') {
+        return;
+      }
+    }
+    
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -120,13 +130,11 @@ export function ManualLogEntry({ onComplete }: ManualLogEntryProps) {
             Weight (kg)
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             name="weight"
             value={formData.weight}
             onChange={handleChange}
-            step="0.1"
-            min="30"
-            max="300"
             placeholder="Enter weight"
             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />

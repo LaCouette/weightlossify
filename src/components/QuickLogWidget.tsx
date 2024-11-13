@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LucideIcon, AlertCircle, Check, Edit2 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useLogsStore } from '../stores/logsStore';
 import { useWeightStore } from '../stores/weightStore';
 import { getTodayLog, formatDateTime } from '../utils/dateUtils';
+import { formatWeight, parseWeight, WEIGHT_STEP } from '../utils/weightFormatting';
 import type { DailyLog } from '../types';
 
 interface QuickLogWidgetProps {
@@ -29,7 +30,7 @@ export function QuickLogWidget({
   field,
   onLogAdded
 }: QuickLogWidgetProps) {
-  const [value, setValue] = useState(defaultValue);
+  const [value, setValue] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -38,48 +39,68 @@ export function QuickLogWidget({
   const updateCurrentWeight = useWeightStore(state => state.updateCurrentWeight);
   const todayLog = getTodayLog(logs);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isEditing && todayLog?.[field] !== undefined) {
-      setValue(todayLog[field] || defaultValue);
+      setValue(field === 'weight' 
+        ? formatWeight(todayLog[field] as number) 
+        : todayLog[field]?.toString() || '');
     }
-  }, [todayLog, field, defaultValue, isEditing]);
+  }, [todayLog, field, isEditing]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
-
-    setIsLoading(true);
-    setError(null);
+    if (!user || !value) return;
 
     try {
+      setIsLoading(true);
+      setError(null);
+
+      // Parse value based on field type
+      let parsedValue: number | null = null;
+      if (field === 'weight') {
+        parsedValue = parseWeight(value);
+      } else {
+        parsedValue = value ? Number(value) : null;
+      }
+
+      if (parsedValue === null || isNaN(parsedValue)) {
+        throw new Error('Invalid value');
+      }
+
+      // Validate range
+      if (parsedValue < min || parsedValue > max) {
+        throw new Error(`Value must be between ${min} and ${max}`);
+      }
+
+      const logData = {
+        [field]: parsedValue,
+        date: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
       if (todayLog) {
         // Update existing log
         await updateLog(user.uid, todayLog.id, {
           ...todayLog,
-          [field]: value,
+          [field]: parsedValue,
           updatedAt: new Date()
         });
       } else {
         // Create new log
-        const newLog: Partial<DailyLog> = {
-          [field]: value,
-          date: new Date().toISOString(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        await addLog(user.uid, newLog);
+        await addLog(user.uid, logData);
       }
 
       // Update global weight state if this is a weight log
       if (field === 'weight') {
-        updateCurrentWeight(value);
+        updateCurrentWeight(parsedValue);
       }
       
       setIsEditing(false);
       setError(null);
       onLogAdded?.();
     } catch (err) {
-      setError('Failed to save log. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to save log');
       console.error('Error logging value:', err);
     } finally {
       setIsLoading(false);
@@ -88,12 +109,19 @@ export function QuickLogWidget({
 
   const handleEdit = () => {
     setIsEditing(true);
-    setValue(todayLog?.[field] || defaultValue);
+    setValue(todayLog?.[field]?.toString() || '');
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    setValue(todayLog?.[field] || defaultValue);
+    setValue(todayLog?.[field]?.toString() || '');
+  };
+
+  const formatDisplayValue = (val: number) => {
+    if (field === 'weight') {
+      return formatWeight(val);
+    }
+    return val.toLocaleString();
   };
 
   const hasLoggedToday = todayLog?.[field] !== undefined && todayLog[field] !== null;
@@ -110,7 +138,7 @@ export function QuickLogWidget({
           <div className="flex items-center justify-between">
             <div>
               <div className="text-2xl font-bold text-gray-900">
-                {Number(todayLog[field]).toFixed(step < 1 ? 1 : 0)} {unit}
+                {formatDisplayValue(Number(todayLog[field]))} {unit}
               </div>
               <div className="text-sm text-gray-500 mt-1">
                 Logged at {formatDateTime(todayLog.updatedAt || todayLog.createdAt)}
@@ -132,14 +160,16 @@ export function QuickLogWidget({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center space-x-2">
             <input
-              type="number"
+              type={field === 'weight' ? 'text' : 'number'}
+              inputMode={field === 'weight' ? 'decimal' : 'numeric'}
               value={value}
-              onChange={(e) => setValue(Number(e.target.value))}
-              step={step}
+              onChange={(e) => setValue(e.target.value)}
+              step={field === 'weight' ? WEIGHT_STEP : undefined}
               min={min}
               max={max}
               disabled={isLoading}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:opacity-50"
+              placeholder={`Enter ${label.toLowerCase()}`}
             />
             <span className="text-sm text-gray-500">{unit}</span>
           </div>
@@ -154,7 +184,7 @@ export function QuickLogWidget({
           <div className="flex space-x-2">
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !value}
               className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Saving...' : isEditing ? 'Update' : 'Log'}
