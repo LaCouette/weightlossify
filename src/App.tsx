@@ -9,6 +9,7 @@ import { LogsHistory } from './components/LogsHistory';
 import { Calculator } from './components/Calculator';
 import { PrivateRoute } from './components/auth/PrivateRoute';
 import { useInitializeWeight } from './hooks/useInitializeWeight';
+import { BottomNav } from './components/navigation/BottomNav';
 
 export function App() {
   // Initialize weight state
@@ -16,7 +17,7 @@ export function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
           <Route
@@ -31,12 +32,13 @@ export function App() {
             path="/profile"
             element={
               <PrivateRoute>
-                <>
+                <div className="flex flex-col min-h-screen">
                   <Header />
-                  <main className="container mx-auto px-4 py-8">
+                  <main className="flex-1 container mx-auto px-4 py-8 mb-16 md:mb-0">
                     <Profile />
                   </main>
-                </>
+                  <BottomNav />
+                </div>
               </PrivateRoute>
             }
           />
@@ -44,12 +46,13 @@ export function App() {
             path="/logs"
             element={
               <PrivateRoute>
-                <>
+                <div className="flex flex-col min-h-screen">
                   <Header />
-                  <main className="container mx-auto px-4 py-8">
+                  <main className="flex-1 container mx-auto px-4 py-8 mb-16 md:mb-0">
                     <LogsHistory />
                   </main>
-                </>
+                  <BottomNav />
+                </div>
               </PrivateRoute>
             }
           />
@@ -57,12 +60,13 @@ export function App() {
             path="/calculator"
             element={
               <PrivateRoute>
-                <>
+                <div className="flex flex-col min-h-screen">
                   <Header />
-                  <main className="container mx-auto px-4 py-8">
+                  <main className="flex-1 container mx-auto px-4 py-8 mb-16 md:mb-0">
                     <Calculator />
                   </main>
-                </>
+                  <BottomNav />
+                </div>
               </PrivateRoute>
             }
           />
@@ -70,12 +74,13 @@ export function App() {
             path="/"
             element={
               <PrivateRoute>
-                <>
+                <div className="flex flex-col min-h-screen">
                   <Header />
-                  <main className="container mx-auto px-4 py-8">
+                  <main className="flex-1 container mx-auto px-4 py-8 mb-16 md:mb-0">
                     <Dashboard />
                   </main>
-                </>
+                  <BottomNav />
+                </div>
               </PrivateRoute>
             }
           />

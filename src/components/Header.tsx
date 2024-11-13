@@ -73,26 +73,8 @@ export function Header() {
         {isMenuOpen && (
           <nav className="md:hidden mt-4 py-2 border-t border-gray-200">
             <div className="space-y-1">
-              {navItems.map(({ path, label, icon: Icon }) => (
-                <Link
-                  key={path}
-                  to={path}
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`flex items-center space-x-2 px-4 py-3 text-base font-medium rounded-md ${
-                    isActive(path)
-                      ? 'text-indigo-600 bg-indigo-50'
-                      : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {Icon && <Icon className="h-5 w-5" />}
-                  <span>{label}</span>
-                </Link>
-              ))}
               <button 
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  handleSignOut();
-                }}
+                onClick={handleSignOut}
                 className="w-full flex items-center space-x-2 px-4 py-3 text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md"
               >
                 <LogOut className="h-5 w-5" />
