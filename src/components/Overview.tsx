@@ -4,7 +4,15 @@ import { useUserStore } from '../stores/userStore';
 import { WeekSelector } from './overview/WeekSelector';
 import { DailyMetricCard } from './overview/DailyMetricCard';
 import { WeekSummary } from './overview/WeekSummary';
-import { getWeekRange, getWeekDates, calculateDayMetrics, calculateWeekSummary } from '../utils/weekCalculations';
+import { InteractiveProjection } from './overview/InteractiveProjection';
+import { 
+  getWeekRange, 
+  getWeekDates, 
+  calculateDayMetrics, 
+  calculateWeekSummary,
+  calculateWeekProjection,
+  getRemainingDates
+} from '../utils/weekCalculations';
 
 export function Overview() {
   const [selectedWeekOffset, setSelectedWeekOffset] = useState(0);
@@ -45,6 +53,16 @@ export function Overview() {
   };
 
   const weekSummary = calculateWeekSummary(weekLogs, prevWeekLogs, profile);
+  const projection = selectedWeekOffset === 0 ? calculateWeekProjection(weekLogs, profile) : null;
+
+  // Calculate current totals for the week
+  const currentTotals = {
+    calories: weekLogs.reduce((sum, log) => sum + (log.calories || 0), 0),
+    steps: weekLogs.reduce((sum, log) => sum + (log.steps || 0), 0)
+  };
+
+  // Get remaining dates for the week
+  const remainingDates = getRemainingDates(weekStart);
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
@@ -54,6 +72,16 @@ export function Overview() {
         selectedWeekOffset={selectedWeekOffset}
         onOffsetChange={setSelectedWeekOffset}
       />
+
+      {projection && (
+        <InteractiveProjection
+          data={projection}
+          remainingDates={remainingDates}
+          weeklyCaloriesTarget={profile.dailyCaloriesTarget * 7}
+          weeklyStepsTarget={profile.dailyStepsGoal * 7}
+          currentTotals={currentTotals}
+        />
+      )}
 
       {/* Daily Metrics */}
       <div className="space-y-4 mb-8">

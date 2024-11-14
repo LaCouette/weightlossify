@@ -1,14 +1,12 @@
 import React from 'react';
 import { Scale, Activity, Utensils, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatWeight } from '../../utils/weightFormatting';
-import { formatDateTime } from '../../utils/dateUtils';
 
 interface DayMetrics {
   weight?: number;
   steps?: number;
   calories?: number;
   calorieBalance: number;
-  updatedAt: Date;
 }
 
 interface DailyMetricCardProps {
@@ -25,15 +23,8 @@ export function DailyMetricCard({ date, metrics }: DailyMetricCardProps) {
         isToday ? 'border-indigo-200 bg-indigo-50/30' : 'border-gray-200'
       }`}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className={`text-sm font-medium ${isToday ? 'text-indigo-600' : 'text-gray-600'}`}>
-          {date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-        </div>
-        {metrics && (
-          <div className="text-xs text-gray-500">
-            Last updated: {formatDateTime(metrics.updatedAt)}
-          </div>
-        )}
+      <div className={`text-sm font-medium mb-3 ${isToday ? 'text-indigo-600' : 'text-gray-600'}`}>
+        {date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
       </div>
 
       {metrics ? (
