@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Scale } from 'lucide-react';
 import '../../../styles/slider.css';
 
@@ -13,11 +13,12 @@ export function TargetSlider({
   initialSteps,
   onTargetsChange 
 }: TargetSliderProps) {
-  const [sliderValue, setSliderValue] = useState(50); // Center position
+  const [sliderValue, setSliderValue] = useState(50);
   const [isMobile, setIsMobile] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [sliderPosition, setSliderPosition] = useState(0);
   const [startX, setStartX] = useState(0);
-  const [currentX, setCurrentX] = useState(0);
 
   // Calculate adjustment range (±20% of initial values)
   const calorieRange = initialCalories * 0.2;
@@ -35,38 +36,56 @@ export function TargetSlider({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Reset slider value when initial values change
+  // Reset slider when initial values change
   useEffect(() => {
     setSliderValue(50);
-    setCurrentX(0);
-    setStartX(0);
+    setSliderPosition(0);
   }, [initialCalories, initialSteps]);
+
+  const updateTargetsFromPosition = (position: number) => {
+    // Convert position to percentage (-100 to 100)
+    const containerWidth = sliderRef.current?.clientWidth || 200;
+    const maxMove = containerWidth / 2;
+    const movePercent = Math.max(-100, Math.min(100, (position / maxMove) * 100));
+    
+    // Calculate new calories based on movement
+    const calorieAdjustment = (movePercent / 100) * calorieRange;
+    const newCalories = Math.round(initialCalories + calorieAdjustment);
+    
+    // Calculate required steps to maintain the same energy balance
+    const calorieChange = newCalories - initialCalories;
+    const stepChange = Math.round(calorieChange / 0.045); // 0.045 calories per step
+    const newSteps = initialSteps + stepChange;
+
+    onTargetsChange(newCalories, newSteps);
+  };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsDragging(true);
-    setStartX(e.touches[0].clientX);
-    setCurrentX(e.touches[0].clientX);
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartX(e.clientX);
-    setCurrentX(e.clientX);
+    const touch = e.touches[0];
+    const rect = sliderRef.current?.getBoundingClientRect();
+    if (rect) {
+      const centerX = rect.left + rect.width / 2;
+      setStartX(touch.clientX - sliderPosition);
+    }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    setCurrentX(e.touches[0].clientX);
-    updateTargets(e.touches[0].clientX - startX);
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const newPosition = touch.clientX - startX;
+    const containerWidth = sliderRef.current?.clientWidth || 200;
+    const maxMove = containerWidth / 2;
+    
+    // Limit movement and add resistance at edges
+    const boundedPosition = Math.min(maxMove, Math.max(-maxMove, newPosition));
+    setSliderPosition(boundedPosition);
+    updateTargetsFromPosition(boundedPosition);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setCurrentX(e.clientX);
-    updateTargets(e.clientX - startX);
-  };
-
-  const handleEnd = () => {
+  const handleTouchEnd = () => {
     setIsDragging(false);
   };
 
@@ -81,24 +100,7 @@ export function TargetSlider({
     
     // Calculate required steps to maintain the same energy balance
     const calorieChange = newCalories - initialCalories;
-    const stepChange = Math.round(calorieChange / 0.045); // 0.045 calories per step
-    const newSteps = initialSteps + stepChange;
-
-    onTargetsChange(newCalories, newSteps);
-  };
-
-  const updateTargets = (deltaX: number) => {
-    // Convert pixel movement to percentage (-100 to 100)
-    const maxPixelMove = 200; // Maximum pixel movement in either direction
-    const movePercent = Math.max(-100, Math.min(100, (deltaX / maxPixelMove) * 100));
-    
-    // Calculate new calories based on movement
-    const calorieAdjustment = (movePercent / 100) * calorieRange;
-    const newCalories = Math.round(initialCalories + calorieAdjustment);
-    
-    // Calculate required steps to maintain the same energy balance
-    const calorieChange = newCalories - initialCalories;
-    const stepChange = Math.round(calorieChange / 0.045); // 0.045 calories per step
+    const stepChange = Math.round(calorieChange / 0.045);
     const newSteps = initialSteps + stepChange;
 
     onTargetsChange(newCalories, newSteps);
@@ -116,21 +118,19 @@ export function TargetSlider({
       {isMobile ? (
         // Mobile Touch Slider
         <div 
-          className="relative h-12 bg-gray-100 rounded-full cursor-pointer touch-none"
+          ref={sliderRef}
+          className="relative h-12 bg-gray-100 rounded-full touch-none select-none"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
-          onTouchEnd={handleEnd}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleEnd}
-          onMouseLeave={handleEnd}
+          onTouchEnd={handleTouchEnd}
         >
           <div className="touch-slider-track" />
           
           <div 
             className={`touch-slider-handle ${isDragging ? 'scale-110' : ''}`}
             style={{
-              transform: `translate(${currentX - startX}px, -50%)`
+              transform: `translate3d(${sliderPosition}px, -50%, 0)`,
+              transition: isDragging ? 'none' : 'transform 0.2s ease-out'
             }}
           />
 
