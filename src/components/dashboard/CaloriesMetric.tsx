@@ -32,7 +32,7 @@ export function CaloriesMetric({ logs, dailyTarget, dateRange, endDate }: Calori
   const progressPercentage = (totalCalories / totalTargetCalories) * 100;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col min-h-[400px]">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2 bg-orange-50 rounded-lg">
           <Utensils className="h-6 w-6 text-orange-600" />
@@ -40,7 +40,7 @@ export function CaloriesMetric({ logs, dailyTarget, dateRange, endDate }: Calori
         <h2 className="text-lg font-semibold text-gray-900">Calories Summary</h2>
       </div>
 
-      <div className="space-y-6">
+      <div className="flex-1 space-y-6">
         {/* Average Daily Intake */}
         <div>
           <div className="text-3xl font-bold text-gray-900">
@@ -88,20 +88,20 @@ export function CaloriesMetric({ logs, dailyTarget, dateRange, endDate }: Calori
             </div>
           </div>
         )}
+      </div>
 
-        {/* Quick Logs Widget */}
-        <div className="pt-4 border-t">
-          <QuickLogWidget
-            icon={Utensils}
-            label="Log Calories"
-            unit="kcal"
-            step={50}
-            min={0}
-            max={10000}
-            defaultValue={dailyTarget}
-            field="calories"
-          />
-        </div>
+      {/* Quick Logs Widget */}
+      <div className="pt-4 mt-6 border-t">
+        <QuickLogWidget
+          icon={Utensils}
+          label="Log Calories"
+          unit="kcal"
+          step={50}
+          min={0}
+          max={10000}
+          defaultValue={dailyTarget}
+          field="calories"
+        />
       </div>
     </div>
   );

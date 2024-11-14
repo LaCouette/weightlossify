@@ -38,23 +38,34 @@ export function CustomPlanBuilder({ profile, onChange, showHeader = true }: Cust
   });
 
   useEffect(() => {
+    const neat = calculateNEAT(values.targetSteps);
+    const totalMaintenance = baseMaintenance + neat;
+    const currentChange = values.targetCalories - totalMaintenance;
+
+    // Determine goal based on calorie target relative to maintenance
+    let primaryGoal: 'weight_loss' | 'maintenance' | 'muscle_gain';
+    if (Math.abs(currentChange) < 100) {
+      primaryGoal = 'maintenance';
+    } else if (currentChange > 0) {
+      primaryGoal = 'muscle_gain';
+    } else {
+      primaryGoal = 'weight_loss';
+    }
+
     onChange({
       dailyCaloriesTarget: values.targetCalories,
       dailyStepsGoal: values.targetSteps,
-      primaryGoal: getGoalFromCalories(values.targetCalories, baseMaintenance),
-      targetWeight: values.targetWeight
+      primaryGoal,
+      // Clear weekly weight goal since this is a custom plan
+      weeklyWeightGoal: undefined,
+      // Only include target weight for weight loss
+      targetWeight: primaryGoal === 'weight_loss' ? values.targetWeight : undefined
     });
   }, [values.targetCalories, values.targetSteps, values.targetWeight]);
 
   const neat = calculateNEAT(values.targetSteps);
   const totalMaintenance = baseMaintenance + neat;
   const currentChange = values.targetCalories - totalMaintenance;
-
-  const getGoalFromCalories = (calories: number, maintenance: number): 'weight_loss' | 'maintenance' | 'muscle_gain' => {
-    const difference = calories - maintenance;
-    if (Math.abs(difference) < 100) return 'maintenance';
-    return difference > 0 ? 'muscle_gain' : 'weight_loss';
-  };
 
   const isWeightLoss = currentChange < -100;
 
