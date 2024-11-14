@@ -43,7 +43,10 @@ export function Header() {
           {/* Centered Logo and Brand */}
           <div 
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center space-x-3 cursor-pointer"
-            onClick={() => navigate('/')}
+            onClick={() => {
+              navigate('/');
+              setIsMenuOpen(false);
+            }}
           >
             <Activity className="h-8 w-8 text-indigo-600" />
             <h1 className="text-2xl font-bold text-gray-900">WeightLossify</h1>
@@ -62,7 +65,10 @@ export function Header() {
 
       {/* Full Screen Navigation Menu */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm">
+        <div 
+          className="fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm"
+          onClick={() => setIsMenuOpen(false)}
+        >
           <div 
             className="absolute inset-y-0 left-0 w-64 bg-white shadow-xl transform transition-transform duration-300"
             onClick={e => e.stopPropagation()}
@@ -98,7 +104,10 @@ export function Header() {
 
               <div className="absolute bottom-8 left-0 right-0 px-6">
                 <button
-                  onClick={handleSignOut}
+                  onClick={() => {
+                    handleSignOut();
+                    setIsMenuOpen(false);
+                  }}
                   className="flex items-center space-x-3 w-full px-4 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <LogOut className="h-5 w-5" />
@@ -107,10 +116,6 @@ export function Header() {
               </div>
             </div>
           </div>
-          <div 
-            className="absolute inset-0" 
-            onClick={() => setIsMenuOpen(false)}
-          />
         </div>
       )}
     </header>
