@@ -12,7 +12,7 @@ interface WeightMetricProps {
   dateRange: 'week' | 'month';
 }
 
-export function WeightMetric({ currentWeight, logs }: WeightMetricProps) {
+export function WeightMetric({ currentWeight, logs, dateRange }: WeightMetricProps) {
   const weightLogs = logs
     .filter(log => typeof log.weight === 'number')
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -49,12 +49,12 @@ export function WeightMetric({ currentWeight, logs }: WeightMetricProps) {
             {formatWeight(currentWeekAverage || currentWeight)} kg
           </div>
           <div className="text-sm text-gray-500 mt-1">
-            Current week average ({weekLogs.length} log{weekLogs.length !== 1 ? 's' : ''})
+            Current {dateRange} average ({weekLogs.length} log{weekLogs.length !== 1 ? 's' : ''})
           </div>
         </div>
 
         {/* Week-over-Week Change */}
-        {weekOverWeekChange && (
+        {weekOverWeekChange && dateRange === 'week' && (
           <div className={`p-4 rounded-lg ${
             weekOverWeekChange.change > 0 ? 'bg-red-50' : 'bg-green-50'
           }`}>
@@ -92,7 +92,7 @@ export function WeightMetric({ currentWeight, logs }: WeightMetricProps) {
             </div>
           </div>
         )}
-
+        
         {/* Quick Log Widget */}
         <div className="pt-4 border-t">
           <QuickLogWidget

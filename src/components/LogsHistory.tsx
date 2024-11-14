@@ -99,7 +99,10 @@ export function LogsHistory() {
       // If weight is present, ensure it's rounded properly
       const updatedValues = {
         ...editValues,
-        weight: editValues.weight ? roundWeight(editValues.weight) : editValues.weight
+        weight: editValues.weight ? roundWeight(editValues.weight) : null,
+        calories: editValues.calories || null,
+        steps: editValues.steps || null,
+        updatedAt: new Date()
       };
 
       await updateLog(user.uid, logId, updatedValues);

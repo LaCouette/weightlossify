@@ -39,6 +39,14 @@ export function LogRow({
     });
   };
 
+  const handleInputChange = (field: keyof Pick<DailyLog, 'weight' | 'calories' | 'steps'>, value: string) => {
+    const numValue = value === '' ? null : Number(value);
+    onEditValuesChange({
+      ...editValues,
+      [field]: numValue
+    });
+  };
+
   return (
     <tr className={`hover:bg-gray-50 ${isSelected ? 'bg-indigo-50' : ''}`}>
       <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
@@ -60,8 +68,8 @@ export function LogRow({
         {isEditing ? (
           <input
             type="number"
-            value={editValues.weight || ''}
-            onChange={(e) => onEditValuesChange({ weight: Number(e.target.value) })}
+            value={editValues.weight ?? ''}
+            onChange={(e) => handleInputChange('weight', e.target.value)}
             className="w-20 sm:w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
             step={WEIGHT_STEP}
           />
@@ -73,8 +81,8 @@ export function LogRow({
         {isEditing ? (
           <input
             type="number"
-            value={editValues.calories || ''}
-            onChange={(e) => onEditValuesChange({ calories: Number(e.target.value) })}
+            value={editValues.calories ?? ''}
+            onChange={(e) => handleInputChange('calories', e.target.value)}
             className="w-20 sm:w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
           />
         ) : (
@@ -85,8 +93,8 @@ export function LogRow({
         {isEditing ? (
           <input
             type="number"
-            value={editValues.steps || ''}
-            onChange={(e) => onEditValuesChange({ steps: Number(e.target.value) })}
+            value={editValues.steps ?? ''}
+            onChange={(e) => handleInputChange('steps', e.target.value)}
             className="w-20 sm:w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
           />
         ) : (

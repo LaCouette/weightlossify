@@ -30,7 +30,7 @@ export function QuickLogWidget({
   field,
   onLogAdded
 }: QuickLogWidgetProps) {
-  const [value, setValue] = useState(defaultValue);
+  const [value, setValue] = useState<number | null>(defaultValue);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -41,9 +41,9 @@ export function QuickLogWidget({
 
   useEffect(() => {
     if (!isEditing && todayLog?.[field] !== undefined) {
-      setValue(todayLog[field] || defaultValue);
+      setValue(todayLog[field]);
     }
-  }, [todayLog, field, defaultValue, isEditing]);
+  }, [todayLog, field, isEditing]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,9 +53,9 @@ export function QuickLogWidget({
     setError(null);
 
     try {
-      const logValue = field === 'weight' ? parseWeight(value.toString()) : value;
-      if (logValue === null) {
-        throw new Error('Invalid value');
+      const logValue = field === 'weight' && value !== null ? parseWeight(value.toString()) : value;
+      if (logValue === null && field === 'weight') {
+        throw new Error('Invalid weight value');
       }
 
       if (todayLog) {
@@ -94,15 +94,21 @@ export function QuickLogWidget({
 
   const handleEdit = () => {
     setIsEditing(true);
-    setValue(todayLog?.[field] || defaultValue);
+    setValue(todayLog?.[field] ?? null);
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    setValue(todayLog?.[field] || defaultValue);
+    setValue(todayLog?.[field] ?? null);
   };
 
-  const formatValue = (val: number) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    setValue(inputValue === '' ? null : Number(inputValue));
+  };
+
+  const formatDisplayValue = (val: number | null) => {
+    if (val === null) return '-';
     if (field === 'weight') {
       return formatWeight(val);
     }
@@ -125,7 +131,7 @@ export function QuickLogWidget({
           <div className="flex items-center justify-between">
             <div>
               <div className="text-2xl font-bold text-gray-900">
-                {formatValue(Number(todayLog[field]))} {unit}
+                {formatDisplayValue(todayLog[field] as number)} {unit}
               </div>
               <div className="text-sm text-gray-500 mt-1">
                 Logged at {formatDateTime(todayLog.updatedAt || todayLog.createdAt)}
@@ -148,8 +154,8 @@ export function QuickLogWidget({
           <div className="flex items-center space-x-2">
             <input
               type="number"
-              value={value}
-              onChange={(e) => setValue(Number(e.target.value))}
+              value={value ?? ''}
+              onChange={handleInputChange}
               step={inputStep}
               min={min}
               max={max}
