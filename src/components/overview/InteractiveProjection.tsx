@@ -64,23 +64,18 @@ export function InteractiveProjection({
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-50 rounded-lg">
-            <Calculator className="h-6 w-6 text-purple-600" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Interactive Projection</h3>
-            <p className="text-sm text-gray-600">
-              Plan ahead and see adjusted daily targets
-            </p>
-          </div>
+      <div className="section-header">
+        <div className="section-icon">
+          <Calculator className="h-6 w-6 text-indigo-600" />
         </div>
-
+        <h2 className="section-title">Interactive Projection</h2>
+        <p className="section-description">
+          Plan ahead and see adjusted daily targets
+        </p>
         {!isAddingDay && (
           <button
             onClick={() => setIsAddingDay(true)}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            className="btn btn-primary mt-4"
           >
             <Plus className="h-4 w-4" />
             <span>Plan Day</span>

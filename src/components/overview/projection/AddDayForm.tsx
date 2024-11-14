@@ -25,9 +25,12 @@ export function AddDayForm({
   onChange
 }: AddDayFormProps) {
   return (
-    <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+    <div className="input-group mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="font-medium text-gray-900">Plan New Day</h4>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-indigo-500" />
+          <h4 className="font-medium text-gray-900">Plan New Day</h4>
+        </div>
         <button
           onClick={onCancel}
           className="text-gray-400 hover:text-gray-600"
@@ -38,11 +41,11 @@ export function AddDayForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+          <label className="input-label">Date</label>
           <select
             value={newDay.date.toISOString()}
             onChange={(e) => onChange({ date: new Date(e.target.value) })}
-            className="w-full p-2 border border-gray-200 rounded-lg"
+            className="input-field"
           >
             {futureDates.map(date => (
               <option 
@@ -63,7 +66,10 @@ export function AddDayForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Calories</label>
+          <div className="flex items-center gap-2 mb-1">
+            <Utensils className="h-4 w-4 text-orange-500" />
+            <label className="input-label">Calories</label>
+          </div>
           <input
             type="number"
             value={newDay.calories || ''}
@@ -71,12 +77,15 @@ export function AddDayForm({
               calories: e.target.value ? Number(e.target.value) : undefined 
             })}
             placeholder="Enter calories"
-            className="w-full p-2 border border-gray-200 rounded-lg"
+            className="input-field"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Steps</label>
+          <div className="flex items-center gap-2 mb-1">
+            <Activity className="h-4 w-4 text-green-500" />
+            <label className="input-label">Steps</label>
+          </div>
           <input
             type="number"
             value={newDay.steps || ''}
@@ -84,7 +93,7 @@ export function AddDayForm({
               steps: e.target.value ? Number(e.target.value) : undefined 
             })}
             placeholder="Enter steps"
-            className="w-full p-2 border border-gray-200 rounded-lg"
+            className="input-field"
           />
         </div>
       </div>
@@ -93,7 +102,7 @@ export function AddDayForm({
         <button
           onClick={onAdd}
           disabled={!newDay.calories && !newDay.steps}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+          className="btn btn-primary"
         >
           Add Plan
         </button>
