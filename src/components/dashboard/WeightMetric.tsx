@@ -133,11 +133,15 @@ export function WeightMetric({ currentWeight, logs, dateRange }: WeightMetricPro
                     ? (isMuscleGain ? 'text-green-700' : 'text-red-700')
                     : (isMuscleGain ? 'text-red-700' : 'text-green-700')
                 }`}>
-                  {(weekOverWeekChange?.percentage || monthChange?.percentage || 0) > 0 ? '+' : ''}
-                  {(weekOverWeekChange?.percentage || monthChange?.percentage || 0).toFixed(1)}%
+                  {(weekOverWeekChange?.change || monthChange?.change || 0) > 0 ? '+' : ''}
+                  {dateRange === 'week' 
+                    ? weekOverWeekChange?.change.toFixed(2) 
+                    : monthChange?.change.toFixed(2)} kg
                   <span className="text-sm font-normal ml-1">
                     ({(weekOverWeekChange?.change || monthChange?.change || 0) > 0 ? '+' : ''}
-                    {formatWeight(weekOverWeekChange?.change || monthChange?.change || 0)} kg)
+                    {dateRange === 'week' 
+                      ? weekOverWeekChange?.percentage.toFixed(1) 
+                      : monthChange?.percentage.toFixed(1)}%)
                   </span>
                 </div>
                 <div className={`text-sm ${
