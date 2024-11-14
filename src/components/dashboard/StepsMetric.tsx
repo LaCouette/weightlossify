@@ -32,7 +32,7 @@ export function StepsMetric({ logs, dailyTarget, dateRange, endDate }: StepsMetr
   const progressPercentage = (totalSteps / totalTargetSteps) * 100;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col min-h-[400px]">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2 bg-green-50 rounded-lg">
           <Activity className="h-6 w-6 text-green-600" />
@@ -40,7 +40,7 @@ export function StepsMetric({ logs, dailyTarget, dateRange, endDate }: StepsMetr
         <h2 className="text-lg font-semibold text-gray-900">Steps Summary</h2>
       </div>
 
-      <div className="space-y-6">
+      <div className="flex-1 space-y-6">
         {/* Average Daily Steps */}
         <div>
           <div className="text-3xl font-bold text-gray-900">
@@ -88,20 +88,20 @@ export function StepsMetric({ logs, dailyTarget, dateRange, endDate }: StepsMetr
             </div>
           </div>
         )}
+      </div>
 
-        {/* Quick Log Widget */}
-        <div className="pt-4 border-t">
-          <QuickLogWidget
-            icon={Activity}
-            label="Log Steps"
-            unit="steps"
-            step={100}
-            min={0}
-            max={100000}
-            defaultValue={dailyTarget}
-            field="steps"
-          />
-        </div>
+      {/* Quick Log Widget */}
+      <div className="pt-4 mt-6 border-t">
+        <QuickLogWidget
+          icon={Activity}
+          label="Log Steps"
+          unit="steps"
+          step={100}
+          min={0}
+          max={100000}
+          defaultValue={dailyTarget}
+          field="steps"
+        />
       </div>
     </div>
   );

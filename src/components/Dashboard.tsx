@@ -56,7 +56,7 @@ export function Dashboard() {
         <WeightMetric
           currentWeight={profile.currentWeight}
           targetWeight={profile.targetWeight}
-          logs={filteredLogs}
+          logs={logs}
           dateRange={dateRange}
         />
 
