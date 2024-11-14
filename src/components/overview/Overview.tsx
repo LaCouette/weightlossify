@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useLogsStore } from '../stores/logsStore';
 import { useUserStore } from '../stores/userStore';
-import { WeekSelector } from './overview/WeekSelector';
-import { DailyMetricCard } from './overview/DailyMetricCard';
-import { WeekSummary } from './overview/WeekSummary';
-import { InteractiveProjection } from './overview/InteractiveProjection';
+import { WeekSelector } from './WeekSelector';
+import { DailyMetricCard } from './DailyMetricCard';
+import { WeekSummary } from './WeekSummary';
+import { InteractiveProjection } from './InteractiveProjection';
 import { 
   getWeekRange, 
   getWeekDates, 
@@ -64,8 +64,10 @@ export function Overview() {
   // Get remaining dates for the week
   const remainingDates = getRemainingDates(weekStart);
 
+  const isCurrentWeek = selectedWeekOffset === 0;
+
   return (
-    <div className="max-w-lg mx-auto px-4 py-6">
+    <div className="min-h-screen bg-gray-50">
       <WeekSelector
         weekStart={weekStart}
         weekEnd={weekEnd}
@@ -73,28 +75,39 @@ export function Overview() {
         onOffsetChange={setSelectedWeekOffset}
       />
 
-      {projection && (
-        <InteractiveProjection
-          data={projection}
-          remainingDates={remainingDates}
-          weeklyCaloriesTarget={profile.dailyCaloriesTarget * 7}
-          weeklyStepsTarget={profile.dailyStepsGoal * 7}
-          currentTotals={currentTotals}
-        />
-      )}
-
-      {/* Daily Metrics */}
-      <div className="space-y-4 mb-8">
-        {weekDates.map(date => (
-          <DailyMetricCard
-            key={date.toISOString()}
-            date={date}
-            metrics={getDayMetrics(date)}
+      <div className="max-w-lg mx-auto px-4 sm:px-6 py-6">
+        {/* Interactive Projection (only for current week) */}
+        {projection && (
+          <InteractiveProjection
+            data={projection}
+            remainingDates={remainingDates}
+            weeklyCaloriesTarget={profile.dailyCaloriesTarget * 7}
+            weeklyStepsTarget={profile.dailyStepsGoal * 7}
+            currentTotals={currentTotals}
           />
-        ))}
-      </div>
+        )}
 
-      <WeekSummary data={weekSummary} />
+        {/* Week Summary (show first for previous weeks) */}
+        {!isCurrentWeek && (
+          <div className="mb-8">
+            <WeekSummary data={weekSummary} />
+          </div>
+        )}
+
+        {/* Daily Metrics */}
+        <div className="space-y-4 mb-8">
+          {weekDates.map(date => (
+            <DailyMetricCard
+              key={date.toISOString()}
+              date={date}
+              metrics={getDayMetrics(date)}
+            />
+          ))}
+        </div>
+
+        {/* Week Summary (show last for current week) */}
+        {isCurrentWeek && <WeekSummary data={weekSummary} />}
+      </div>
     </div>
   );
 }
