@@ -3,6 +3,7 @@ import { Calculator, Plus } from 'lucide-react';
 import { AddDayForm } from './projection/AddDayForm';
 import { PlannedDaysList } from './projection/PlannedDaysList';
 import { AdjustedTargets } from './projection/AdjustedTargets';
+import { InfoAccordion } from './projection/InfoAccordion';
 import { useProjectionCalculator } from './projection/useProjectionCalculator';
 import { usePlannedDays } from './projection/usePlannedDays';
 
@@ -32,17 +33,15 @@ export function InteractiveProjection({
   weeklyStepsTarget,
   currentTotals
 }: InteractiveProjectionProps) {
-  // Filter out today and past dates
+  // Filter out past dates and today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   const futureDates = remainingDates.filter(date => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     const dateToCheck = new Date(date);
     dateToCheck.setHours(0, 0, 0, 0);
     return dateToCheck > today;
   });
-
-  // Don't show the component if there are no future dates to plan
-  if (futureDates.length === 0) return null;
 
   const {
     plannedDays,
@@ -62,26 +61,33 @@ export function InteractiveProjection({
 
   const remainingTargets = calculateRemainingTargets(plannedDays, futureDates);
 
+  if (futureDates.length === 0) return null;
+
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
       <div className="section-header">
         <div className="section-icon">
           <Calculator className="h-6 w-6 text-indigo-600" />
         </div>
-        <h2 className="section-title">Interactive Projection</h2>
+        <h2 className="section-title">Weekly Planner & Projection</h2>
         <p className="section-description">
-          Plan ahead and see adjusted daily targets
+          Plan your week ahead and see how it affects your daily targets
         </p>
-        {!isAddingDay && (
+      </div>
+
+      <InfoAccordion />
+
+      {!isAddingDay && (
+        <div className="flex justify-center mb-6">
           <button
             onClick={() => setIsAddingDay(true)}
-            className="btn btn-primary mt-4"
+            className="btn btn-primary"
           >
             <Plus className="h-4 w-4" />
-            <span>Plan Day</span>
+            <span>Plan Upcoming Day</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {isAddingDay && (
         <AddDayForm
