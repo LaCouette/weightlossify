@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, Utensils, AlertTriangle, Target } from 'lucide-react';
+import { TargetSlider } from './TargetSlider';
 
 interface RemainingTargets {
   calories: number | null;
@@ -24,9 +25,23 @@ interface AdjustedTargetsProps {
 }
 
 export function AdjustedTargets({ remainingTargets, projectionData }: AdjustedTargetsProps) {
+  const [adjustedCalories, setAdjustedCalories] = useState(remainingTargets.calories);
+  const [adjustedSteps, setAdjustedSteps] = useState(remainingTargets.steps);
+
+  // Update adjusted values when remaining targets change
+  useEffect(() => {
+    setAdjustedCalories(remainingTargets.calories);
+    setAdjustedSteps(remainingTargets.steps);
+  }, [remainingTargets.calories, remainingTargets.steps]);
+
   if (!remainingTargets || (remainingTargets.unplannedCalorieDays <= 0 && remainingTargets.unplannedStepDays <= 0)) {
     return null;
   }
+
+  const handleTargetsChange = (newCalories: number, newSteps: number) => {
+    setAdjustedCalories(newCalories);
+    setAdjustedSteps(newSteps);
+  };
 
   return (
     <div>
@@ -55,7 +70,7 @@ export function AdjustedTargets({ remainingTargets, projectionData }: AdjustedTa
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {remainingTargets.calories !== null && remainingTargets.unplannedCalorieDays > 0 && (
+        {adjustedCalories !== null && remainingTargets.unplannedCalorieDays > 0 && (
           <div className="metric-card">
             <div className="metric-header">
               <div className="metric-icon">
@@ -65,7 +80,7 @@ export function AdjustedTargets({ remainingTargets, projectionData }: AdjustedTa
             </div>
             <div className="mt-4">
               <div className="metric-value">
-                {Math.round(remainingTargets.calories).toLocaleString()}
+                {Math.round(adjustedCalories).toLocaleString()}
               </div>
               <div className="metric-subtitle">
                 average for next {remainingTargets.unplannedCalorieDays} day{remainingTargets.unplannedCalorieDays > 1 ? 's' : ''}
@@ -77,7 +92,7 @@ export function AdjustedTargets({ remainingTargets, projectionData }: AdjustedTa
           </div>
         )}
 
-        {remainingTargets.steps !== null && remainingTargets.unplannedStepDays > 0 && (
+        {adjustedSteps !== null && remainingTargets.unplannedStepDays > 0 && (
           <div className="metric-card">
             <div className="metric-header">
               <div className="metric-icon">
@@ -87,7 +102,7 @@ export function AdjustedTargets({ remainingTargets, projectionData }: AdjustedTa
             </div>
             <div className="mt-4">
               <div className="metric-value">
-                {Math.round(remainingTargets.steps).toLocaleString()}
+                {Math.round(adjustedSteps).toLocaleString()}
               </div>
               <div className="metric-subtitle">
                 average for next {remainingTargets.unplannedStepDays} day{remainingTargets.unplannedStepDays > 1 ? 's' : ''}
@@ -99,6 +114,15 @@ export function AdjustedTargets({ remainingTargets, projectionData }: AdjustedTa
           </div>
         )}
       </div>
+
+      {/* Target Adjustment Slider */}
+      {adjustedCalories !== null && adjustedSteps !== null && (
+        <TargetSlider
+          initialCalories={remainingTargets.calories || 0}
+          initialSteps={remainingTargets.steps || 0}
+          onTargetsChange={handleTargetsChange}
+        />
+      )}
     </div>
   );
 }
