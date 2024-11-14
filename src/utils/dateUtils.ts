@@ -21,6 +21,13 @@ export function formatDateTime(date: Date | string): string {
   });
 }
 
+export function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
 export function getStartOfDay(date: Date): Date {
   const newDate = new Date(date);
   newDate.setHours(0, 0, 0, 0);
