@@ -41,16 +41,23 @@ export function CalorieSlider({
         </div>
 
         <div className="relative pt-6 pb-2">
-          <input
-            type="range"
-            min={minCalories}
-            max={maxCalories}
-            value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-            step="50"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-2">
+          <div className="relative h-4">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full shadow-inner" />
+            <input
+              type="range"
+              min={minCalories}
+              max={maxCalories}
+              value={value}
+              onChange={(e) => onChange(Number(e.target.value))}
+              className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer touch-pan-y"
+              step="50"
+              style={{
+                '--thumb-size': '2rem',
+                '--thumb-shadow': '0 2px 6px rgba(0,0,0,0.2)'
+              } as React.CSSProperties}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-gray-500 mt-4">
             <span>{minCalories}</span>
             <span>{maxCalories}</span>
           </div>

@@ -19,6 +19,14 @@ const MIN_CALORIES = 1200;
 export function Calculator() {
   const { profile } = useUserStore();
   const currentWeight = useWeightStore(state => state.currentWeight) || profile?.currentWeight || 0;
+  const handleCaloriesChange = (newCalories: number) => {
+    // Round to nearest 50
+    const roundedCalories = Math.round(newCalories / 50) * 50;
+    setValues(prev => ({
+      ...prev,
+      targetCalories: roundedCalories
+    }));
+  };
   
   const bmr = calculateBMR(
     currentWeight,
