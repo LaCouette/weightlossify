@@ -97,7 +97,8 @@ export const useUserStore = create<UserState>((set) => ({
         const profileData: UserProfile = {
           ...data,
           createdAt: data.createdAt.toDate(),
-          updatedAt: data.updatedAt.toDate()
+          updatedAt: data.updatedAt.toDate(),
+          setupCompleted: data.setupCompleted ?? false // Ensure setupCompleted has a default value
         } as UserProfile;
         
         set({ profile: profileData });
@@ -126,7 +127,8 @@ export const useUserStore = create<UserState>((set) => ({
       const profileData = {
         ...sanitizedData,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        setupCompleted: profile.setupCompleted ?? false // Ensure setupCompleted has a default value
       };
 
       await setDoc(docRef, profileData);

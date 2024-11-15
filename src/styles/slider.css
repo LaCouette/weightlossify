@@ -1,0 +1,55 @@
+.range-slider {
+  @apply w-full h-2 rounded-full appearance-none cursor-pointer;
+  background: linear-gradient(to right, rgb(251 207 232), rgb(224 231 255), rgb(220 252 231));
+  -webkit-appearance: none;
+}
+
+/* Webkit (Chrome, Safari) */
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border: 2px solid rgb(99 102 241);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+/* Firefox */
+.range-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border: 2px solid rgb(99 102 241);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.range-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}
+
+/* Mobile Touch Slider */
+.touch-slider-track {
+  @apply absolute inset-0 rounded-full;
+  background: linear-gradient(to right, rgb(251 207 232), rgb(224 231 255), rgb(220 252 231));
+  will-change: transform;
+}
+
+.touch-slider-handle {
+  @apply absolute top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg border-2 border-indigo-500;
+  left: 50%;
+  will-change: transform;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

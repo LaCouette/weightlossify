@@ -9,17 +9,34 @@ import { useUserStore } from '../../stores/userStore';
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const { user } = useAuthStore();
-  const { profile } = useUserStore();
+  const { profile, fetchProfile } = useUserStore();
   const navigate = useNavigate();
 
   useEffect(() => {
+    const initializeProfile = async () => {
+      if (user?.uid) {
+        try {
+          await fetchProfile(user.uid);
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+      }
+    };
+
+    initializeProfile();
+  }, [user?.uid, fetchProfile]);
+
+  useEffect(() => {
     if (user) {
-      // If user has completed profile setup, go to dashboard
-      // Otherwise, go to profile setup
-      if (profile?.setupCompleted) {
-        navigate('/');
-      } else {
+      if (!profile) {
+        // No profile exists yet, redirect to setup
         navigate('/profile-setup');
+      } else if (!profile.setupCompleted) {
+        // Profile exists but setup not completed
+        navigate('/profile-setup');
+      } else {
+        // Profile exists and setup completed
+        navigate('/');
       }
     }
   }, [user, profile, navigate]);
