@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calculator as CalculatorIcon, Activity, Scale, Info } from 'lucide-react';
 import { useUserStore } from '../stores/userStore';
 import { useWeightStore } from '../stores/weightStore';
@@ -35,28 +35,88 @@ export function Calculator() {
     targetSteps: profile?.dailyStepsGoal || 8000
   });
 
+  const [isCaloriesLocked, setIsCaloriesLocked] = useState(false);
+  const [isStepsLocked, setIsStepsLocked] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window);
+  }, []);
+
   const neat = calculateNEAT(values.targetSteps);
   const totalMaintenance = baseMaintenance + neat;
-  const calorieBalance = values.targetCalories - totalMaintenance;
-  const isDeficit = calorieBalance < 0;
-  const isSurplus = calorieBalance > 0;
+  const currentChange = values.targetCalories - totalMaintenance;
 
   const handleCaloriesChange = (newCalories: number) => {
+    if (isCaloriesLocked) return;
+
+    const clampedCalories = roundCalories(
+      Math.min(Math.max(newCalories, MIN_CALORIES), MAX_CALORIES),
+      'maintenance'
+    );
+    
     setValues(prev => ({
       ...prev,
-      targetCalories: roundCalories(newCalories, 'maintenance')
+      targetCalories: clampedCalories
     }));
   };
 
   const handleStepsChange = (newSteps: number) => {
+    if (isStepsLocked) return;
+
+    const clampedSteps = roundSteps(Math.min(Math.max(newSteps, 0), MAX_STEPS));
+    
     setValues(prev => ({
       ...prev,
-      targetSteps: roundSteps(Math.min(Math.max(newSteps, 0), MAX_STEPS))
+      targetSteps: clampedSteps
     }));
   };
 
+  // Touch and mouse event handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isTouchDevice) return;
+    setTouchStart(e.clientX);
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || isTouchDevice) return;
+    setTouchEnd(e.clientX);
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging && !isTouchDevice) {
+      handleTouchEnd();
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (isDragging && !isTouchDevice) {
+      handleTouchEnd();
+    }
+  };
+
   const getBalanceDescription = () => {
-    if (Math.abs(calorieBalance) < 50) {
+    if (Math.abs(currentChange) < 50) {
       return {
         title: 'Maintenance',
         description: 'You are close to maintenance calories. This will help maintain your current weight.',
@@ -65,8 +125,8 @@ export function Calculator() {
       };
     }
     
-    if (isDeficit) {
-      const weeklyLoss = (Math.abs(calorieBalance) * 7) / 7700;
+    if (currentChange < 0) {
+      const weeklyLoss = (Math.abs(currentChange) * 7) / 7700;
       return {
         title: 'Calorie Deficit',
         description: `This deficit could lead to approximately ${weeklyLoss.toFixed(2)}kg weight loss per week.`,
@@ -75,7 +135,7 @@ export function Calculator() {
       };
     }
     
-    const weeklyGain = (calorieBalance * 7) / 7700;
+    const weeklyGain = (currentChange * 7) / 7700;
     return {
       title: 'Calorie Surplus',
       description: `This surplus could lead to approximately ${weeklyGain.toFixed(2)}kg weight gain per week.`,
@@ -121,24 +181,40 @@ export function Calculator() {
               {Math.round(values.targetCalories)}
             </div>
             <div className="text-sm text-gray-500">calories per day</div>
-            {(isDeficit || isSurplus) && (
-              <div className={`text-sm mt-1 ${isDeficit ? 'text-green-600' : 'text-orange-600'}`}>
-                ({isDeficit ? '-' : '+'}{Math.abs(Math.round(calorieBalance))} kcal {isDeficit ? 'deficit' : 'surplus'})
+            {(currentChange < -50 || currentChange > 50) && (
+              <div className={`text-sm mt-1 ${currentChange < 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                ({currentChange > 0 ? '+' : ''}{Math.abs(Math.round(currentChange))} kcal {currentChange > 0 ? 'surplus' : 'deficit'})
               </div>
             )}
           </div>
 
           <div className="relative pt-6 pb-2">
-            <input
-              type="range"
-              min={MIN_CALORIES}
-              max={MAX_CALORIES}
-              value={values.targetCalories}
-              onChange={(e) => handleCaloriesChange(Number(e.target.value))}
-              className="w-full h-2 bg-gradient-to-r from-orange-100 to-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600 shadow-inner"
-              step="50"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
+            <div className="relative h-4">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full shadow-inner" />
+              <input
+                type="range"
+                min={MIN_CALORIES}
+                max={MAX_CALORIES}
+                value={values.targetCalories}
+                onChange={(e) => handleCaloriesChange(Number(e.target.value))}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer touch-pan-y"
+                step="50"
+                style={{
+                  '--thumb-size': '2rem',
+                  '--thumb-shadow': '0 2px 6px rgba(0,0,0,0.2)',
+                  opacity: isCaloriesLocked ? '0.5' : '1',
+                  cursor: isCaloriesLocked ? 'not-allowed' : 'pointer'
+                } as React.CSSProperties}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-4">
               <span>{MIN_CALORIES}</span>
               <span>{MAX_CALORIES}</span>
             </div>
@@ -167,16 +243,32 @@ export function Calculator() {
           </div>
 
           <div className="relative pt-6 pb-2">
-            <input
-              type="range"
-              min={0}
-              max={MAX_STEPS}
-              value={values.targetSteps}
-              onChange={(e) => handleStepsChange(Number(e.target.value))}
-              className="w-full h-2 bg-gradient-to-r from-green-100 to-green-200 rounded-lg appearance-none cursor-pointer accent-green-600 shadow-inner"
-              step="100"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
+            <div className="relative h-4">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-100 to-green-200 rounded-full shadow-inner" />
+              <input
+                type="range"
+                min={0}
+                max={MAX_STEPS}
+                value={values.targetSteps}
+                onChange={(e) => handleStepsChange(Number(e.target.value))}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer touch-pan-y"
+                step="500"
+                style={{
+                  '--thumb-size': '2rem',
+                  '--thumb-shadow': '0 2px 6px rgba(0,0,0,0.2)',
+                  opacity: isStepsLocked ? '0.5' : '1',
+                  cursor: isStepsLocked ? 'not-allowed' : 'pointer'
+                } as React.CSSProperties}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-4">
               <span>0</span>
               <span>{MAX_STEPS.toLocaleString()}</span>
             </div>
@@ -206,13 +298,13 @@ export function Calculator() {
             <div className="bg-white/80 rounded-lg p-4 shadow-sm">
               <div className="text-sm text-gray-600">Daily Balance</div>
               <div className="text-xl font-bold text-gray-900">
-                {isDeficit ? '-' : '+'}{Math.abs(Math.round(calorieBalance))} kcal
+                {currentChange > 0 ? '+' : ''}{Math.round(currentChange)} kcal
               </div>
             </div>
             <div className="bg-white/80 rounded-lg p-4 shadow-sm">
               <div className="text-sm text-gray-600">Weekly Impact</div>
               <div className="text-xl font-bold text-gray-900">
-                {((Math.abs(calorieBalance) * 7) / 7700).toFixed(2)} kg
+                {((Math.abs(currentChange) * 7) / 7700).toFixed(2)} kg
               </div>
             </div>
           </div>

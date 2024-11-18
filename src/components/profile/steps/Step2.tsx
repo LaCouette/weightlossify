@@ -84,28 +84,28 @@ export function Step2({ formData, onChange }: Step2Props) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold text-blue-600">{heightDisplay} cm</span>
-              <input
-                type="number"
-                value={heightDisplay}
-                onChange={(e) => handleHeightChange(e.target.value)}
-                className="w-20 p-2 text-right border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                step="1"
-                min="140"
-                max="220"
-              />
             </div>
-            <input
-              type="range"
-              value={heightDisplay}
-              onChange={(e) => handleHeightChange(e.target.value)}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-              min="140"
-              max="220"
-              step="1"
-            />
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>140 cm</span>
-              <span>220 cm</span>
+            <div className="relative pt-6 pb-2">
+              <div className="relative h-4">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full shadow-inner" />
+                <input
+                  type="range"
+                  value={heightDisplay}
+                  onChange={(e) => handleHeightChange(e.target.value)}
+                  className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer touch-pan-y"
+                  step="1"
+                  min="140"
+                  max="220"
+                  style={{
+                    '--thumb-size': '2rem',
+                    '--thumb-shadow': '0 2px 6px rgba(0,0,0,0.2)'
+                  } as React.CSSProperties}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-4">
+                <span>140 cm</span>
+                <span>220 cm</span>
+              </div>
             </div>
           </div>
         </div>
@@ -121,28 +121,28 @@ export function Step2({ formData, onChange }: Step2Props) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold text-orange-600">{weightDisplay} kg</span>
-              <input
-                type="number"
-                value={weightDisplay}
-                onChange={(e) => handleWeightChange(e.target.value)}
-                className="w-20 p-2 text-right border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
-                step="0.5"
-                min="40"
-                max="200"
-              />
             </div>
-            <input
-              type="range"
-              value={weightDisplay}
-              onChange={(e) => handleWeightChange(e.target.value)}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-              min="40"
-              max="200"
-              step="0.5"
-            />
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>40 kg</span>
-              <span>200 kg</span>
+            <div className="relative pt-6 pb-2">
+              <div className="relative h-4">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full shadow-inner" />
+                <input
+                  type="range"
+                  value={weightDisplay}
+                  onChange={(e) => handleWeightChange(e.target.value)}
+                  className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer touch-pan-y"
+                  step="0.5"
+                  min="40"
+                  max="200"
+                  style={{
+                    '--thumb-size': '2rem',
+                    '--thumb-shadow': '0 2px 6px rgba(0,0,0,0.2)'
+                  } as React.CSSProperties}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-4">
+                <span>40 kg</span>
+                <span>200 kg</span>
+              </div>
             </div>
           </div>
         </div>

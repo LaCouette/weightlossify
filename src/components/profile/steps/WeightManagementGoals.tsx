@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Scale, TrendingDown } from 'lucide-react';
 
 interface WeightManagementGoalsProps {
@@ -12,10 +12,10 @@ export function WeightManagementGoals({
   currentPlan,
   onChange
 }: WeightManagementGoalsProps) {
-  const [targetWeight, setTargetWeight] = React.useState<number>(
-    Math.max(currentWeight - 20, currentWeight * 0.8)
-  );
-  const [selectedPlan, setSelectedPlan] = React.useState<'moderate_loss' | 'aggressive_loss'>(
+  // Round initial target weight to nearest 0.5
+  const initialTargetWeight = Math.round((Math.max(currentWeight - 20, currentWeight * 0.8) * 2)) / 2;
+  const [targetWeight, setTargetWeight] = useState<number>(initialTargetWeight);
+  const [selectedPlan, setSelectedPlan] = useState<'moderate_loss' | 'aggressive_loss'>(
     currentPlan === '0.35' ? 'moderate_loss' : 'aggressive_loss'
   );
 
@@ -25,7 +25,11 @@ export function WeightManagementGoals({
   };
 
   const handleTargetWeightChange = (value: number) => {
-    const newValue = Math.min(Math.max(value, currentWeight * 0.6), currentWeight - 0.5);
+    // Round to nearest 0.5
+    const roundedValue = Math.round(value * 2) / 2;
+    const minWeight = Math.ceil(currentWeight * 0.6 * 2) / 2; // Round up to nearest 0.5
+    const maxWeight = Math.floor((currentWeight - 0.5) * 2) / 2; // Round down to nearest 0.5
+    const newValue = Math.min(Math.max(roundedValue, minWeight), maxWeight);
     setTargetWeight(newValue);
     onChange(selectedPlan === 'moderate_loss' ? '0.35' : '0.6', newValue);
   };
@@ -39,6 +43,10 @@ export function WeightManagementGoals({
 
   const moderateTimeline = calculateTimeline(0.35);
   const aggressiveTimeline = calculateTimeline(0.6);
+
+  // Round min/max values to nearest 0.5
+  const minWeight = Math.ceil(currentWeight * 0.6 * 2) / 2;
+  const maxWeight = Math.floor((currentWeight - 0.5) * 2) / 2;
 
   return (
     <div className="space-y-6">
@@ -63,30 +71,29 @@ export function WeightManagementGoals({
               <span className="text-2xl font-bold text-blue-600">
                 {targetWeight.toFixed(1)} kg
               </span>
-              <input
-                type="number"
-                value={targetWeight}
-                onChange={(e) => handleTargetWeightChange(Number(e.target.value))}
-                step="0.5"
-                min={currentWeight * 0.6}
-                max={currentWeight - 0.5}
-                className="w-24 p-2 text-right border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
             </div>
 
-            <input
-              type="range"
-              value={targetWeight}
-              onChange={(e) => handleTargetWeightChange(Number(e.target.value))}
-              step="0.5"
-              min={currentWeight * 0.6}
-              max={currentWeight - 0.5}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-            />
-
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>{(currentWeight * 0.6).toFixed(1)} kg</span>
-              <span>{(currentWeight - 0.5).toFixed(1)} kg</span>
+            <div className="relative pt-6 pb-2">
+              <div className="relative h-4">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full shadow-inner" />
+                <input
+                  type="range"
+                  value={targetWeight}
+                  onChange={(e) => handleTargetWeightChange(Number(e.target.value))}
+                  className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer touch-pan-y"
+                  step="0.5"
+                  min={minWeight}
+                  max={maxWeight}
+                  style={{
+                    '--thumb-size': '2rem',
+                    '--thumb-shadow': '0 2px 6px rgba(0,0,0,0.2)'
+                  } as React.CSSProperties}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-4">
+                <span>{minWeight.toFixed(1)} kg</span>
+                <span>{maxWeight.toFixed(1)} kg</span>
+              </div>
             </div>
 
             <div className="mt-2 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">

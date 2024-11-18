@@ -11,6 +11,7 @@ import { CalorieSlider } from './CalorieSlider';
 import { StepsSlider } from './StepsSlider';
 import { TargetWeightInput } from './TargetWeightInput';
 import { ExpectedResults } from './ExpectedResults';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface CustomPlanBuilderProps {
   profile: UserProfile;
@@ -28,44 +29,44 @@ export function CustomPlanBuilder({ profile, onChange, showHeader = true }: Cust
   );
   
   const baseMaintenance = calculateBaseMaintenance(bmr);
+  // Round maintenance to nearest 50
+  const roundedMaintenance = Math.round(baseMaintenance / 50) * 50;
   const maxCalories = Math.round(baseMaintenance * 2);
   const minCalories = Math.round(baseMaintenance * 0.5);
 
   const [values, setValues] = useState({
-    targetCalories: baseMaintenance,
+    targetCalories: roundedMaintenance,
     targetSteps: 8000,
     targetWeight: profile.targetWeight || undefined
   });
 
   useEffect(() => {
-    const neat = calculateNEAT(values.targetSteps);
-    const totalMaintenance = baseMaintenance + neat;
-    const currentChange = values.targetCalories - totalMaintenance;
-
-    // Determine goal based on calorie target relative to maintenance
-    let primaryGoal: 'weight_loss' | 'maintenance' | 'muscle_gain';
-    if (Math.abs(currentChange) < 100) {
-      primaryGoal = 'maintenance';
-    } else if (currentChange > 0) {
-      primaryGoal = 'muscle_gain';
-    } else {
-      primaryGoal = 'weight_loss';
-    }
-
     onChange({
       dailyCaloriesTarget: values.targetCalories,
       dailyStepsGoal: values.targetSteps,
-      primaryGoal,
-      // Clear weekly weight goal since this is a custom plan
-      weeklyWeightGoal: undefined,
-      // Only include target weight for weight loss
-      targetWeight: primaryGoal === 'weight_loss' ? values.targetWeight : undefined
+      primaryGoal: getGoalFromCalories(values.targetCalories, baseMaintenance),
+      targetWeight: values.targetWeight
     });
   }, [values.targetCalories, values.targetSteps, values.targetWeight]);
 
   const neat = calculateNEAT(values.targetSteps);
   const totalMaintenance = baseMaintenance + neat;
   const currentChange = values.targetCalories - totalMaintenance;
+
+  const getGoalFromCalories = (calories: number, maintenance: number): 'weight_loss' | 'maintenance' | 'muscle_gain' => {
+    const difference = calories - maintenance;
+    if (Math.abs(difference) < 100) return 'maintenance';
+    return difference > 0 ? 'muscle_gain' : 'weight_loss';
+  };
+
+  const handleCaloriesChange = (newCalories: number) => {
+    // Round to nearest 50
+    const roundedCalories = Math.round(newCalories / 50) * 50;
+    setValues(prev => ({
+      ...prev,
+      targetCalories: roundedCalories
+    }));
+  };
 
   const isWeightLoss = currentChange < -100;
 
@@ -96,7 +97,7 @@ export function CustomPlanBuilder({ profile, onChange, showHeader = true }: Cust
         minCalories={minCalories}
         maxCalories={maxCalories}
         currentChange={currentChange}
-        onChange={(value) => setValues(prev => ({ ...prev, targetCalories: value }))}
+        onChange={handleCaloriesChange}
       />
 
       <StepsSlider
@@ -105,13 +106,24 @@ export function CustomPlanBuilder({ profile, onChange, showHeader = true }: Cust
         onChange={(value) => setValues(prev => ({ ...prev, targetSteps: value }))}
       />
 
-      {isWeightLoss && (
-        <TargetWeightInput
-          value={values.targetWeight}
-          currentWeight={profile.currentWeight}
-          onChange={(value) => setValues(prev => ({ ...prev, targetWeight: value }))}
-        />
-      )}
+      {/* Wrap TargetWeightInput in AnimatePresence for smooth transitions */}
+      <AnimatePresence mode="wait">
+        {isWeightLoss && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <TargetWeightInput
+              value={values.targetWeight}
+              currentWeight={profile.currentWeight}
+              onChange={(value) => setValues(prev => ({ ...prev, targetWeight: value }))}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ExpectedResults currentChange={currentChange} />
     </div>

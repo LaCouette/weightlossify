@@ -13,10 +13,18 @@ export function PrivateRoute({ children }: PrivateRouteProps) {
   const location = useLocation();
 
   useEffect(() => {
-    if (user?.uid && !profile) {
-      fetchProfile(user.uid);
-    }
-  }, [user?.uid, fetchProfile, profile]);
+    const initializeProfile = async () => {
+      if (user?.uid && !profile) {
+        try {
+          await fetchProfile(user.uid);
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+      }
+    };
+
+    initializeProfile();
+  }, [user?.uid, profile, fetchProfile]);
 
   if (authLoading || profileLoading) {
     return (

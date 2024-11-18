@@ -56,6 +56,9 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
     targetSteps: initialReco.steps
   });
 
+  const [isCaloriesLocked, setIsCaloriesLocked] = useState(false);
+  const [isStepsLocked, setIsStepsLocked] = useState(false);
+
   useEffect(() => {
     onChange({
       dailyCaloriesTarget: values.targetCalories,
@@ -68,6 +71,8 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
   const currentChange = values.targetCalories - totalMaintenance;
 
   const handleCaloriesChange = (newCalories: number) => {
+    if (isCaloriesLocked) return;
+
     const clampedCalories = roundCalories(
       Math.min(Math.max(newCalories, minCalories), maxCalories),
       profile.primaryGoal
@@ -78,8 +83,17 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
       baseMaintenance,
       targetChange
     );
-    const clampedSteps = roundSteps(Math.min(Math.max(requiredSteps, 0), MAX_STEPS));
 
+    // Check if required steps would be out of bounds
+    const clampedSteps = roundSteps(Math.min(Math.max(requiredSteps, 0), MAX_STEPS));
+    
+    // If steps would be at min/max, lock calories at current value
+    if (clampedSteps === 0 || clampedSteps === MAX_STEPS) {
+      setIsStepsLocked(true);
+      return;
+    }
+
+    setIsStepsLocked(false);
     setValues({
       targetCalories: clampedCalories,
       targetSteps: clampedSteps
@@ -87,6 +101,8 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
   };
 
   const handleStepsChange = (newSteps: number) => {
+    if (isStepsLocked) return;
+
     const clampedSteps = roundSteps(Math.min(Math.max(newSteps, 0), MAX_STEPS));
     const newNeat = calculateNEAT(clampedSteps);
     const newTotalMaintenance = baseMaintenance + newNeat;
@@ -95,12 +111,27 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
       targetChange,
       profile.primaryGoal
     );
+
+    // Check if new calories would be out of bounds
     const clampedCalories = Math.min(Math.max(newCalories, minCalories), maxCalories);
 
+    // If calories would be at min/max, lock steps at current value
+    if (clampedCalories === minCalories || clampedCalories === maxCalories) {
+      setIsCaloriesLocked(true);
+      return;
+    }
+
+    setIsCaloriesLocked(false);
     setValues({
       targetCalories: clampedCalories,
       targetSteps: clampedSteps
     });
+  };
+
+  // Reset locks when mouse/touch is released
+  const handlePointerUp = () => {
+    setIsCaloriesLocked(false);
+    setIsStepsLocked(false);
   };
 
   return (
@@ -115,7 +146,9 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
       {/* Calories Slider */}
       <div className="bg-white rounded-xl p-6 border border-gray-200">
         <div className="flex items-center gap-2 mb-4">
-          <Scale className="h-5 w-5 text-orange-600" />
+          <div className="p-2 bg-orange-50 rounded-lg shadow-sm">
+            <Scale className="h-5 w-5 text-orange-600" />
+          </div>
           <h3 className="font-medium text-gray-900">Daily Calorie Target</h3>
         </div>
 
@@ -133,16 +166,26 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
           </div>
 
           <div className="relative pt-6 pb-2">
-            <input
-              type="range"
-              min={minCalories}
-              max={maxCalories}
-              value={values.targetCalories}
-              onChange={(e) => handleCaloriesChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-              step="50"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
+            <div className="relative h-4">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full shadow-inner" />
+              <input
+                type="range"
+                min={minCalories}
+                max={maxCalories}
+                value={values.targetCalories}
+                onChange={(e) => handleCaloriesChange(Number(e.target.value))}
+                onPointerUp={handlePointerUp}
+                className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer touch-pan-y"
+                step="50"
+                style={{
+                  '--thumb-size': '2rem',
+                  '--thumb-shadow': '0 2px 6px rgba(0,0,0,0.2)',
+                  opacity: isCaloriesLocked ? '0.5' : '1',
+                  cursor: isCaloriesLocked ? 'not-allowed' : 'pointer'
+                } as React.CSSProperties}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-4">
               <span>{minCalories}</span>
               <span>{maxCalories}</span>
             </div>
@@ -153,7 +196,9 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
       {/* Steps Slider */}
       <div className="bg-white rounded-xl p-6 border border-gray-200">
         <div className="flex items-center gap-2 mb-4">
-          <Activity className="h-5 w-5 text-green-600" />
+          <div className="p-2 bg-green-50 rounded-lg shadow-sm">
+            <Activity className="h-5 w-5 text-green-600" />
+          </div>
           <h3 className="font-medium text-gray-900">Daily Steps Target</h3>
         </div>
 
@@ -169,16 +214,26 @@ export function TargetAdjustment({ profile, onChange }: TargetAdjustmentProps) {
           </div>
 
           <div className="relative pt-6 pb-2">
-            <input
-              type="range"
-              min={0}
-              max={MAX_STEPS}
-              value={values.targetSteps}
-              onChange={(e) => handleStepsChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
-              step="100"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
+            <div className="relative h-4">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-100 to-green-200 rounded-full shadow-inner" />
+              <input
+                type="range"
+                min={0}
+                max={MAX_STEPS}
+                value={values.targetSteps}
+                onChange={(e) => handleStepsChange(Number(e.target.value))}
+                onPointerUp={handlePointerUp}
+                className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer touch-pan-y"
+                step="500"
+                style={{
+                  '--thumb-size': '2rem',
+                  '--thumb-shadow': '0 2px 6px rgba(0,0,0,0.2)',
+                  opacity: isStepsLocked ? '0.5' : '1',
+                  cursor: isStepsLocked ? 'not-allowed' : 'pointer'
+                } as React.CSSProperties}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-4">
               <span>0</span>
               <span>{MAX_STEPS.toLocaleString()}</span>
             </div>

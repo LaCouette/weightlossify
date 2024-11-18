@@ -9,7 +9,7 @@ interface WeightLossPlanProps {
 
 export function WeightLossPlan({ currentWeight, currentPlan, onChange }: WeightLossPlanProps) {
   const [targetWeight, setTargetWeight] = useState<number>(
-    Math.max(currentWeight - 20, currentWeight * 0.8)
+    Math.round((Math.max(currentWeight - 20, currentWeight * 0.8) * 2)) / 2
   );
   const [selectedPlan, setSelectedPlan] = useState<'moderate_loss' | 'aggressive_loss'>(
     currentPlan === '0.35' ? 'moderate_loss' : 'aggressive_loss'
@@ -21,7 +21,11 @@ export function WeightLossPlan({ currentWeight, currentPlan, onChange }: WeightL
   };
 
   const handleTargetWeightChange = (value: number) => {
-    const newValue = Math.min(Math.max(value, currentWeight * 0.6), currentWeight - 0.5);
+    // Round to nearest 0.5
+    const roundedValue = Math.round(value * 2) / 2;
+    const minWeight = Math.ceil(currentWeight * 0.6 * 2) / 2; // Round up to nearest 0.5
+    const maxWeight = Math.floor((currentWeight - 0.5) * 2) / 2; // Round down to nearest 0.5
+    const newValue = Math.min(Math.max(roundedValue, minWeight), maxWeight);
     setTargetWeight(newValue);
     onChange(selectedPlan === 'moderate_loss' ? '0.35' : '0.6', newValue);
   };
@@ -54,39 +58,38 @@ export function WeightLossPlan({ currentWeight, currentPlan, onChange }: WeightL
         {/* Target Weight Selector */}
         <div className="bg-white rounded-xl p-6 border border-gray-200">
           <label className="block text-sm font-medium text-gray-700 mb-4">Target Weight</label>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-blue-600">
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-600">
                 {targetWeight.toFixed(1)} kg
-              </span>
-              <input
-                type="number"
-                value={targetWeight}
-                onChange={(e) => handleTargetWeightChange(Number(e.target.value))}
-                step="0.5"
-                min={currentWeight * 0.6}
-                max={currentWeight - 0.5}
-                className="w-24 p-2 text-right border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
+              </div>
+              <div className="text-sm text-gray-500">target weight</div>
+              <div className="text-sm text-blue-600 mt-1">
+                ({(currentWeight - targetWeight).toFixed(1)} kg to lose)
+              </div>
             </div>
 
-            <input
-              type="range"
-              value={targetWeight}
-              onChange={(e) => handleTargetWeightChange(Number(e.target.value))}
-              step="0.5"
-              min={currentWeight * 0.6}
-              max={currentWeight - 0.5}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-            />
-
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>{(currentWeight * 0.6).toFixed(1)} kg</span>
-              <span>{(currentWeight - 0.5).toFixed(1)} kg</span>
-            </div>
-
-            <div className="mt-2 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-              Total weight to lose: {(currentWeight - targetWeight).toFixed(1)} kg
+            <div className="relative pt-6 pb-2">
+              <div className="relative h-4">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full shadow-inner" />
+                <input
+                  type="range"
+                  value={targetWeight}
+                  onChange={(e) => handleTargetWeightChange(Number(e.target.value))}
+                  className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer touch-pan-y"
+                  step="0.5"
+                  min={Math.ceil(currentWeight * 0.6 * 2) / 2}
+                  max={Math.floor((currentWeight - 0.5) * 2) / 2}
+                  style={{
+                    '--thumb-size': '2rem',
+                    '--thumb-shadow': '0 2px 6px rgba(0,0,0,0.2)'
+                  } as React.CSSProperties}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-4">
+                <span>{(currentWeight * 0.6).toFixed(1)} kg</span>
+                <span>{(currentWeight - 0.5).toFixed(1)} kg</span>
+              </div>
             </div>
           </div>
         </div>
