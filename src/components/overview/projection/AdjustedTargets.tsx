@@ -7,6 +7,8 @@ interface RemainingTargets {
   steps: number | null;
   unplannedCalorieDays: number;
   unplannedStepDays: number;
+  hasCaloriesLog: boolean;
+  hasStepsLog: boolean;
   calorieDeficitAdjustment?: {
     additionalSteps: number;
     totalSteps: number;
@@ -84,6 +86,7 @@ export function AdjustedTargets({ remainingTargets, projectionData }: AdjustedTa
               </div>
               <div className="metric-subtitle">
                 average for next {remainingTargets.unplannedCalorieDays} day{remainingTargets.unplannedCalorieDays > 1 ? 's' : ''}
+                {!remainingTargets.hasCaloriesLog && ' (including today)'}
               </div>
               <div className="text-sm text-gray-600 mt-2">
                 Stay close to this target to meet your weekly calorie goal
@@ -106,6 +109,7 @@ export function AdjustedTargets({ remainingTargets, projectionData }: AdjustedTa
               </div>
               <div className="metric-subtitle">
                 average for next {remainingTargets.unplannedStepDays} day{remainingTargets.unplannedStepDays > 1 ? 's' : ''}
+                {!remainingTargets.hasStepsLog && ' (including today)'}
               </div>
               <div className="text-sm text-gray-600 mt-2">
                 Aim for this daily target to achieve your activity goals

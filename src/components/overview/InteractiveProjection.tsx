@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Calculator, Plus } from 'lucide-react';
 import { AddDayForm } from './projection/AddDayForm';
 import { PlannedDaysList } from './projection/PlannedDaysList';
 import { AdjustedTargets } from './projection/AdjustedTargets';
 import { InfoAccordion } from './projection/InfoAccordion';
 import { useProjectionCalculator } from './projection/useProjectionCalculator';
-import { usePlannedDays } from './projection/usePlannedDays';
+import { usePlannedDays } from '../../hooks/usePlannedDays';
+import { usePlannedDaysStore } from '../../stores/plannedDaysStore';
 
 interface ProjectionData {
   remainingDays: number;
@@ -40,7 +41,7 @@ export function InteractiveProjection({
   const futureDates = remainingDates.filter(date => {
     const dateToCheck = new Date(date);
     dateToCheck.setHours(0, 0, 0, 0);
-    return dateToCheck > today;
+    return dateToCheck >= today;
   });
 
   const {
@@ -52,6 +53,13 @@ export function InteractiveProjection({
     handleRemoveDay,
     updateNewDay
   } = usePlannedDays(futureDates[0]);
+
+  const { clearExpiredDays } = usePlannedDaysStore();
+
+  // Clear expired days on component mount
+  useEffect(() => {
+    clearExpiredDays();
+  }, []);
 
   const { calculateRemainingTargets } = useProjectionCalculator(
     weeklyCaloriesTarget,

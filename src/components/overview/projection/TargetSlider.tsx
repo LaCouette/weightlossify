@@ -16,8 +16,12 @@ export function TargetSlider({
 
   // Calculate adjustment range (±20% of initial values)
   const calorieRange = initialCalories * 0.2;
-  const minCalories = initialCalories - calorieRange;
-  const maxCalories = initialCalories + calorieRange;
+  const minCalories = Math.floor((initialCalories - calorieRange) / 50) * 50; // Round down to nearest 50
+  const maxCalories = Math.ceil((initialCalories + calorieRange) / 50) * 50; // Round up to nearest 50
+
+  const stepsRange = initialSteps * 0.2;
+  const minSteps = Math.floor((initialSteps - stepsRange) / 100) * 100; // Round down to nearest 100
+  const maxSteps = Math.ceil((initialSteps + stepsRange) / 100) * 100; // Round up to nearest 100
 
   // Reset slider when initial values change
   useEffect(() => {
@@ -30,18 +34,19 @@ export function TargetSlider({
     
     // Convert 0-100 range to -20% to +20% range
     const movePercent = ((value - 50) / 50) * 100;
-    const calorieAdjustment = (movePercent / 100) * calorieRange;
-    const newCalories = Math.round(initialCalories + calorieAdjustment);
     
-    // Calculate required steps to maintain the same energy balance
-    const calorieChange = newCalories - initialCalories;
-    const stepChange = Math.round(calorieChange / 0.045);
-    const newSteps = Math.max(0, initialSteps + stepChange); // Ensure steps never go below 0
+    // Calculate calories with 50 increment
+    const calorieAdjustment = Math.round((movePercent / 100) * calorieRange / 50) * 50;
+    const newCalories = initialCalories + calorieAdjustment;
+    
+    // Calculate steps with 100 increment
+    const stepAdjustment = Math.round((movePercent / 100) * stepsRange / 100) * 100;
+    const newSteps = Math.max(0, initialSteps + stepAdjustment);
 
     // If steps would be negative, adjust calories to maintain minimum 0 steps
-    if (initialSteps + stepChange < 0) {
+    if (initialSteps + stepAdjustment < 0) {
       const maxDeficit = Math.round(initialSteps * 0.045); // Maximum calorie deficit possible from steps
-      const adjustedCalories = initialCalories - maxDeficit;
+      const adjustedCalories = Math.round((initialCalories - maxDeficit) / 50) * 50;
       onTargetsChange(adjustedCalories, 0);
     } else {
       onTargetsChange(newCalories, newSteps);

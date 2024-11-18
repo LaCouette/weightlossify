@@ -24,6 +24,19 @@ export function AddDayForm({
   onAdd,
   onChange
 }: AddDayFormProps) {
+  // Get available dates (exclude dates that already have both calories and steps planned)
+  const availableDates = futureDates.filter(date => {
+    const existingPlan = plannedDays.find(day => 
+      new Date(day.date).toDateString() === date.toDateString()
+    );
+    return !existingPlan || !(existingPlan.calories && existingPlan.steps);
+  });
+
+  // Find existing plan for selected date
+  const existingPlan = plannedDays.find(day => 
+    new Date(day.date).toDateString() === new Date(newDay.date).toDateString()
+  );
+
   return (
     <div className="input-group mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -47,13 +60,10 @@ export function AddDayForm({
             onChange={(e) => onChange({ date: new Date(e.target.value) })}
             className="input-field"
           >
-            {futureDates.map(date => (
+            {availableDates.map(date => (
               <option 
                 key={date.toISOString()} 
                 value={date.toISOString()}
-                disabled={plannedDays.some(day => 
-                  day.date.toDateString() === date.toDateString()
-                )}
               >
                 {date.toLocaleDateString('en-US', { 
                   weekday: 'short', 
@@ -76,7 +86,8 @@ export function AddDayForm({
             onChange={(e) => onChange({ 
               calories: e.target.value ? Number(e.target.value) : undefined 
             })}
-            placeholder="Enter calories"
+            placeholder={existingPlan?.calories ? 'Already planned' : 'Enter calories'}
+            disabled={existingPlan?.calories !== undefined}
             className="input-field"
           />
         </div>
@@ -92,7 +103,8 @@ export function AddDayForm({
             onChange={(e) => onChange({ 
               steps: e.target.value ? Number(e.target.value) : undefined 
             })}
-            placeholder="Enter steps"
+            placeholder={existingPlan?.steps ? 'Already planned' : 'Enter steps'}
+            disabled={existingPlan?.steps !== undefined}
             className="input-field"
           />
         </div>
