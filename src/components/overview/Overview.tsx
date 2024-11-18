@@ -1,18 +1,11 @@
 import React, { useState } from 'react';
-import { useLogsStore } from '../stores/logsStore';
-import { useUserStore } from '../stores/userStore';
-import { WeekSelector } from './WeekSelector';
-import { DailyMetricCard } from './DailyMetricCard';
-import { WeekSummary } from './WeekSummary';
-import { InteractiveProjection } from './InteractiveProjection';
-import { 
-  getWeekRange, 
-  getWeekDates, 
-  calculateDayMetrics, 
-  calculateWeekSummary,
-  calculateWeekProjection,
-  getRemainingDates
-} from '../utils/weekCalculations';
+import { useLogsStore } from '../../stores/logsStore';
+import { useUserStore } from '../../stores/userStore';
+import { WeekSelector } from './sections/WeekSelector';
+import { ProjectionSection } from './sections/ProjectionSection';
+import { WeekSummarySection } from './sections/WeekSummarySection';
+import { DailyLogsSection } from './sections/DailyLogsSection';
+import { getWeekRange } from '../../utils/weekCalculations';
 
 export function Overview() {
   const [selectedWeekOffset, setSelectedWeekOffset] = useState(0);
@@ -37,35 +30,6 @@ export function Overview() {
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  // Generate array of dates for the week
-  const weekDates = getWeekDates(weekStart);
-
-  // Calculate daily metrics
-  const getDayMetrics = (date: Date) => {
-    const dayLog = weekLogs.find(log => {
-      const logDate = new Date(log.date);
-      return logDate.getDate() === date.getDate() &&
-             logDate.getMonth() === date.getMonth() &&
-             logDate.getFullYear() === date.getFullYear();
-    });
-
-    return calculateDayMetrics(dayLog, profile);
-  };
-
-  const weekSummary = calculateWeekSummary(weekLogs, prevWeekLogs, profile);
-  const projection = selectedWeekOffset === 0 ? calculateWeekProjection(weekLogs, profile) : null;
-
-  // Calculate current totals for the week
-  const currentTotals = {
-    calories: weekLogs.reduce((sum, log) => sum + (log.calories || 0), 0),
-    steps: weekLogs.reduce((sum, log) => sum + (log.steps || 0), 0)
-  };
-
-  // Get remaining dates for the week
-  const remainingDates = getRemainingDates(weekStart);
-
-  const isCurrentWeek = selectedWeekOffset === 0;
-
   return (
     <div className="min-h-screen bg-gray-50">
       <WeekSelector
@@ -75,38 +39,28 @@ export function Overview() {
         onOffsetChange={setSelectedWeekOffset}
       />
 
-      <div className="max-w-lg mx-auto px-4 sm:px-6 py-6">
-        {/* Interactive Projection (only for current week) */}
-        {projection && (
-          <InteractiveProjection
-            data={projection}
-            remainingDates={remainingDates}
-            weeklyCaloriesTarget={profile.dailyCaloriesTarget * 7}
-            weeklyStepsTarget={profile.dailyStepsGoal * 7}
-            currentTotals={currentTotals}
-          />
-        )}
+      <div className="max-w-lg mx-auto px-4 sm:px-6 space-y-4 pb-20">
+        {/* Projection Section - Now passing selectedWeekOffset */}
+        <ProjectionSection
+          weekLogs={weekLogs}
+          profile={profile}
+          weekStart={weekStart}
+          selectedWeekOffset={selectedWeekOffset}
+        />
 
-        {/* Week Summary (show first for previous weeks) */}
-        {!isCurrentWeek && (
-          <div className="mb-8">
-            <WeekSummary data={weekSummary} />
-          </div>
-        )}
+        {/* Week Summary Section */}
+        <WeekSummarySection
+          weekLogs={weekLogs}
+          prevWeekLogs={prevWeekLogs}
+          profile={profile}
+        />
 
-        {/* Daily Metrics */}
-        <div className="space-y-4 mb-8">
-          {weekDates.map(date => (
-            <DailyMetricCard
-              key={date.toISOString()}
-              date={date}
-              metrics={getDayMetrics(date)}
-            />
-          ))}
-        </div>
-
-        {/* Week Summary (show last for current week) */}
-        {isCurrentWeek && <WeekSummary data={weekSummary} />}
+        {/* Daily Logs Section */}
+        <DailyLogsSection
+          weekStart={weekStart}
+          weekLogs={weekLogs}
+          profile={profile}
+        />
       </div>
     </div>
   );

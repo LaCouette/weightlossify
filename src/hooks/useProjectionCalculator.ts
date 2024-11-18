@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useRemainingDays } from '../../../hooks/useRemainingDays';
-import { useLogsStore } from '../../../stores/logsStore';
+import { useMemo } from 'react';
+import { useRemainingDays } from './useRemainingDays';
+import { useLogsStore } from '../stores/logsStore';
 
 interface PlannedDay {
   date: Date;
@@ -38,18 +38,18 @@ export function useProjectionCalculator(
     const remainingSteps = weeklyStepsTarget - currentTotals.steps - plannedSteps;
 
     let requiredDailyCalories = caloriesRemainingDays > 0 
-      ? remainingCalories / caloriesRemainingDays 
+      ? Math.round(remainingCalories / caloriesRemainingDays / 50) * 50 // Round to nearest 50
       : null;
     let requiredDailySteps = stepsRemainingDays > 0 
-      ? remainingSteps / stepsRemainingDays 
+      ? Math.round(remainingSteps / stepsRemainingDays / 100) * 100 // Round to nearest 100
       : null;
 
     // If calories are negative, adjust steps to compensate
     let calorieDeficitAdjustment = null;
     if (requiredDailyCalories !== null && requiredDailyCalories < 0 && requiredDailySteps !== null) {
       const totalCalorieDeficit = Math.abs(requiredDailyCalories * caloriesRemainingDays);
-      const additionalStepsNeeded = Math.ceil(totalCalorieDeficit / CALORIES_PER_STEP);
-      const additionalStepsPerDay = Math.ceil(additionalStepsNeeded / stepsRemainingDays);
+      const additionalStepsNeeded = Math.ceil(totalCalorieDeficit / CALORIES_PER_STEP / 100) * 100;
+      const additionalStepsPerDay = Math.ceil(additionalStepsNeeded / stepsRemainingDays / 100) * 100;
       
       requiredDailyCalories = 0;
       requiredDailySteps += additionalStepsPerDay;

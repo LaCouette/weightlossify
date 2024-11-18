@@ -16,7 +16,7 @@ export function PlannedDaysList({ plannedDays, onRemove }: PlannedDaysListProps)
   if (plannedDays.length === 0) return null;
 
   return (
-    <div className="mb-6">
+    <div>
       <div className="flex items-center gap-2 mb-3">
         <Calendar className="h-4 w-4 text-indigo-500" />
         <h4 className="font-medium text-gray-900">Planned Days</h4>
@@ -25,7 +25,7 @@ export function PlannedDaysList({ plannedDays, onRemove }: PlannedDaysListProps)
         {plannedDays.map((day, index) => (
           <div 
             key={index}
-            className="metric-card group"
+            className="bg-gray-50 rounded-xl p-4 group"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">

@@ -24,21 +24,8 @@ export function AddDayForm({
   onAdd,
   onChange
 }: AddDayFormProps) {
-  // Get available dates (exclude dates that already have both calories and steps planned)
-  const availableDates = futureDates.filter(date => {
-    const existingPlan = plannedDays.find(day => 
-      new Date(day.date).toDateString() === date.toDateString()
-    );
-    return !existingPlan || !(existingPlan.calories && existingPlan.steps);
-  });
-
-  // Find existing plan for selected date
-  const existingPlan = plannedDays.find(day => 
-    new Date(day.date).toDateString() === new Date(newDay.date).toDateString()
-  );
-
   return (
-    <div className="input-group mb-6">
+    <div className="bg-gray-50 rounded-xl p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-indigo-500" />
@@ -54,16 +41,19 @@ export function AddDayForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className="input-label">Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
           <select
             value={newDay.date.toISOString()}
             onChange={(e) => onChange({ date: new Date(e.target.value) })}
-            className="input-field"
+            className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           >
-            {availableDates.map(date => (
+            {futureDates.map(date => (
               <option 
                 key={date.toISOString()} 
                 value={date.toISOString()}
+                disabled={plannedDays.some(day => 
+                  day.date.toDateString() === date.toDateString()
+                )}
               >
                 {date.toLocaleDateString('en-US', { 
                   weekday: 'short', 
@@ -78,7 +68,7 @@ export function AddDayForm({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Utensils className="h-4 w-4 text-orange-500" />
-            <label className="input-label">Calories</label>
+            <label className="text-sm font-medium text-gray-700">Calories</label>
           </div>
           <input
             type="number"
@@ -86,16 +76,16 @@ export function AddDayForm({
             onChange={(e) => onChange({ 
               calories: e.target.value ? Number(e.target.value) : undefined 
             })}
-            placeholder={existingPlan?.calories ? 'Already planned' : 'Enter calories'}
-            disabled={existingPlan?.calories !== undefined}
-            className="input-field"
+            placeholder="Enter calories"
+            step="50"
+            className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
 
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Activity className="h-4 w-4 text-green-500" />
-            <label className="input-label">Steps</label>
+            <label className="text-sm font-medium text-gray-700">Steps</label>
           </div>
           <input
             type="number"
@@ -103,9 +93,9 @@ export function AddDayForm({
             onChange={(e) => onChange({ 
               steps: e.target.value ? Number(e.target.value) : undefined 
             })}
-            placeholder={existingPlan?.steps ? 'Already planned' : 'Enter steps'}
-            disabled={existingPlan?.steps !== undefined}
-            className="input-field"
+            placeholder="Enter steps"
+            step="100"
+            className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -114,7 +104,7 @@ export function AddDayForm({
         <button
           onClick={onAdd}
           disabled={!newDay.calories && !newDay.steps}
-          className="btn btn-primary"
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
         >
           Add Plan
         </button>

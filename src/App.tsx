@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
 import { BottomNav } from './components/navigation/BottomNav';
 import { Dashboard } from './components/Dashboard';
-import { Overview } from './components/Overview';
+import { Overview } from './components/overview/Overview'; // Updated import path
 import { AuthPage } from './components/auth/AuthPage';
 import { ProfileSetup } from './components/profile/ProfileSetup';
 import { Profile } from './components/profile/Profile';
@@ -49,7 +49,7 @@ export function App() {
               <PrivateRoute>
                 <div className="flex flex-col min-h-screen pb-16 md:pb-0">
                   <Header />
-                  <main className="container mx-auto px-4 py-8">
+                  <main className="flex-1">
                     <Overview />
                   </main>
                   <BottomNav />

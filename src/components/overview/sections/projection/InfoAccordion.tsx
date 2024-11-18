@@ -5,7 +5,7 @@ export function InfoAccordion() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="mb-6">
+    <div>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full bg-indigo-50 rounded-lg px-4 py-3 flex items-center justify-between text-left transition-colors hover:bg-indigo-100"
