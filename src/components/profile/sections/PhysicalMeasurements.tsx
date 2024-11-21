@@ -26,10 +26,7 @@ export function PhysicalMeasurements({
   onCancel,
   onEdit
 }: PhysicalMeasurementsProps) {
-  // Get logs for average weight calculation
   const { logs } = useLogsStore();
-  
-  // Calculate current average weight
   const averageWeight = calculateCurrentAverageWeight(logs);
   const displayWeight = averageWeight || profile.currentWeight;
 
@@ -114,7 +111,7 @@ export function PhysicalMeasurements({
               <input
                 type="number"
                 name="bodyFat"
-                value={profile.bodyFat}
+                value={profile.bodyFat || ''}
                 onChange={onChange}
                 disabled={!isEditing}
                 min="3"
@@ -126,6 +123,11 @@ export function PhysicalMeasurements({
             </div>
             <span className="text-sm text-gray-600">%</span>
           </div>
+          {!isEditing && profile.bodyFat && (
+            <div className="mt-1 text-sm text-gray-500">
+              Last recorded value
+            </div>
+          )}
         </div>
 
         <div className="input-group">

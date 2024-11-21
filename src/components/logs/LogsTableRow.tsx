@@ -43,6 +43,11 @@ export function LogsTableRow({
     return weight.toFixed(1);
   };
 
+  const formatBodyFat = (bodyFat: number | undefined): string => {
+    if (typeof bodyFat !== 'number') return '-';
+    return bodyFat.toFixed(1);
+  };
+
   return (
     <tr className={`hover:bg-gray-50 ${isSelected ? 'bg-indigo-50' : ''}`}>
       <td className="px-6 py-4 whitespace-nowrap">
@@ -71,6 +76,21 @@ export function LogsTableRow({
           />
         ) : (
           formatWeight(log.weight)
+        )}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm">
+        {isEditing ? (
+          <input
+            type="number"
+            value={editValues.bodyFat || ''}
+            onChange={(e) => onEditValuesChange({ bodyFat: Number(e.target.value) })}
+            className="w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
+            step="0.1"
+            min="3"
+            max="50"
+          />
+        ) : (
+          formatBodyFat(log.bodyFat)
         )}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm">

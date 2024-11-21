@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square, MinusSquare } from 'lucide-react';
 
-export type SortField = 'date' | 'weight' | 'calories' | 'steps';
+export type SortField = 'date' | 'weight' | 'bodyFat' | 'calories' | 'steps';
 export type SortDirection = 'asc' | 'desc';
 
 export interface SortConfig {
@@ -102,6 +102,15 @@ export function LogsTableHeader({
           >
             <span>Weight (kg)</span>
             {getSortIcon('weight')}
+          </button>
+        </th>
+        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <button
+            onClick={() => onSort('bodyFat')}
+            className="flex items-center gap-2 hover:text-indigo-600"
+          >
+            <span>Body Fat %</span>
+            {getSortIcon('bodyFat')}
           </button>
         </th>
         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

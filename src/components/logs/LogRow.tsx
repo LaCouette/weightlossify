@@ -39,7 +39,7 @@ export function LogRow({
     });
   };
 
-  const handleInputChange = (field: keyof Pick<DailyLog, 'weight' | 'calories' | 'steps'>, value: string) => {
+  const handleInputChange = (field: keyof Pick<DailyLog, 'weight' | 'bodyFat' | 'calories' | 'steps'>, value: string) => {
     const numValue = value === '' ? null : Number(value);
     onEditValuesChange({
       ...editValues,
@@ -75,6 +75,21 @@ export function LogRow({
           />
         ) : (
           formatWeight(log.weight)
+        )}
+      </td>
+      <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+        {isEditing ? (
+          <input
+            type="number"
+            value={editValues.bodyFat ?? ''}
+            onChange={(e) => handleInputChange('bodyFat', e.target.value)}
+            className="w-20 sm:w-24 px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
+            step="0.1"
+            min="3"
+            max="50"
+          />
+        ) : (
+          log.bodyFat?.toFixed(1) || '-'
         )}
       </td>
       <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">

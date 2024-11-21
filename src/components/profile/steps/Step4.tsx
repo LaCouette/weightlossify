@@ -136,7 +136,7 @@ export function Step4({ formData }: Step4Props) {
                     <div className="text-sm font-medium text-gray-600">
                       {formula.charAt(0).toUpperCase() + formula.slice(1)} Formula
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{weight} kg</div>
+                    <div className="text-2xl font-bold text-gray-900">{wight} kg</div>
                   </div>
                   <div className={`w-2 h-8 rounded-full ${
                     Math.abs(weight - formData.currentWeight) <= 5 ? 'bg-green-500' : 'bg-gray-300'

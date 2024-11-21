@@ -11,12 +11,19 @@
   },
   "dependencies": {
     "chart.js": "^4.4.1",
-    "firebase": "^10.8.0",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "chartjs-plugin-annotation": "^3.0.1",
+    "chartjs-plugin-datalabels": "^2.2.0",
+    "date-fns": "^3.3.1",
+    "firebase": "10.8.0",
     "framer-motion": "^11.0.3",
     "lucide-react": "^0.344.0",
+    "openai": "^4.28.0",
     "react": "^18.3.1",
+    "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.22.1",
+    "regression": "^2.0.1",
     "zustand": "^4.5.1"
   },
   "devDependencies": {

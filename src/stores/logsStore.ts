@@ -40,11 +40,14 @@ export const useLogsStore = create<LogsState>((set, get) => ({
       const logs = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
-          id: doc.id, // Use Firestore's auto-generated ID
+          id: doc.id,
           date: data.date,
-          weight: typeof data.weight === 'number' ? Number(data.weight) : undefined,
-          calories: typeof data.calories === 'number' ? Number(data.calories) : undefined,
-          steps: typeof data.steps === 'number' ? Number(data.steps) : undefined,
+          weight: typeof data.weight === 'number' ? Number(data.weight) : null,
+          bodyFat: typeof data.bodyFat === 'number' ? Number(data.bodyFat) : null,
+          calories: typeof data.calories === 'number' ? Number(data.calories) : null,
+          macros: data.macros || null,
+          steps: typeof data.steps === 'number' ? Number(data.steps) : null,
+          distance: typeof data.distance === 'number' ? Number(data.distance) : null,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date()
         } as DailyLog;
@@ -65,21 +68,21 @@ export const useLogsStore = create<LogsState>((set, get) => ({
       set({ isLoading: true, error: null });
       const logsRef = collection(db, `users/${userId}/logs`);
       
-      // Validate the data before saving
+      // Validate and clean the data
       const validatedData = {
         ...logData,
         date: logData.date || new Date().toISOString(),
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
         weight: typeof logData.weight === 'number' ? Number(logData.weight) : null,
+        bodyFat: typeof logData.bodyFat === 'number' ? Number(logData.bodyFat) : null,
         calories: typeof logData.calories === 'number' ? Number(logData.calories) : null,
-        steps: typeof logData.steps === 'number' ? Number(logData.steps) : null
+        macros: logData.macros || null,
+        steps: typeof logData.steps === 'number' ? Number(logData.steps) : null,
+        distance: typeof logData.distance === 'number' ? Number(logData.distance) : null
       };
 
-      // Use addDoc to let Firestore generate the ID
-      const docRef = await addDoc(logsRef, validatedData);
-      
-      // Refresh logs
+      await addDoc(logsRef, validatedData);
       await get().fetchLogs(userId);
     } catch (error) {
       console.error('Error adding log:', error);
@@ -100,8 +103,11 @@ export const useLogsStore = create<LogsState>((set, get) => ({
         ...updates,
         updatedAt: Timestamp.now(),
         weight: typeof updates.weight === 'number' ? Number(updates.weight) : null,
+        bodyFat: typeof updates.bodyFat === 'number' ? Number(updates.bodyFat) : null,
         calories: typeof updates.calories === 'number' ? Number(updates.calories) : null,
-        steps: typeof updates.steps === 'number' ? Number(updates.steps) : null
+        macros: updates.macros || null,
+        steps: typeof updates.steps === 'number' ? Number(updates.steps) : null,
+        distance: typeof updates.distance === 'number' ? Number(updates.distance) : null
       };
 
       await updateDoc(logRef, validatedUpdates);

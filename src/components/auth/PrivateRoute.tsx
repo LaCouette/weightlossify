@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserStore } from '../../stores/userStore';
@@ -7,12 +7,12 @@ interface PrivateRouteProps {
   children: React.ReactNode;
 }
 
-export function PrivateRoute({ children }: PrivateRouteProps) {
+export default function PrivateRoute({ children }: PrivateRouteProps) {
   const { user, loading: authLoading } = useAuthStore();
   const { profile, fetchProfile, isLoading: profileLoading } = useUserStore();
   const location = useLocation();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const initializeProfile = async () => {
       if (user?.uid && !profile) {
         try {
@@ -35,7 +35,7 @@ export function PrivateRoute({ children }: PrivateRouteProps) {
   }
 
   if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   // If no profile exists or setup isn't completed, redirect to profile setup
@@ -44,9 +44,9 @@ export function PrivateRoute({ children }: PrivateRouteProps) {
     return <Navigate to="/profile-setup" replace />;
   }
 
-  // If profile setup is completed and user tries to access /profile-setup, redirect to home
+  // If profile setup is completed and user tries to access /profile-setup, redirect to dashboard
   if (profile?.setupCompleted && location.pathname === '/profile-setup') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/app/dashboard" replace />;
   }
 
   return <>{children}</>;

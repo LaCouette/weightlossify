@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { LucideIcon, AlertCircle, Check, Edit2 } from 'lucide-react';
-import { useAuthStore } from '../stores/authStore';
-import { useLogsStore } from '../stores/logsStore';
-import { useWeightStore } from '../stores/weightStore';
-import { getTodayLog, formatDateTime } from '../utils/dateUtils';
-import { formatWeight, parseWeight, WEIGHT_STEP } from '../utils/weightFormatting';
+import React from 'react';
+import { LucideIcon, Percent, Route, Beef } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import { LogValue } from './quicklog/LogValue';
+import { LogForm } from './quicklog/LogForm';
+import { AdditionalDataPrompt } from './quicklog/AdditionalDataPrompt';
+import { useLogState } from './quicklog/useLogState';
+import { BodyFatModal } from './modals/BodyFatModal';
+import { MacrosModal } from './modals/MacrosModal';
+import { DistanceModal } from './modals/DistanceModal';
 import type { DailyLog } from '../types';
 
 interface QuickLogWidgetProps {
@@ -30,168 +33,210 @@ export function QuickLogWidget({
   field,
   onLogAdded
 }: QuickLogWidgetProps) {
-  const [value, setValue] = useState<number | null>(defaultValue);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const { user } = useAuthStore();
-  const { logs, addLog, updateLog } = useLogsStore();
-  const updateCurrentWeight = useWeightStore(state => state.updateCurrentWeight);
-  const todayLog = getTodayLog(logs);
+  const {
+    state,
+    setState,
+    todayLog,
+    user,
+    updateLog,
+    updateProfile,
+    handleSubmit
+  } = useLogState(field, defaultValue);
 
-  useEffect(() => {
-    if (!isEditing && todayLog?.[field] !== undefined) {
-      setValue(todayLog[field]);
-    }
-  }, [todayLog, field, isEditing]);
+  const handleBodyFatSubmit = async (bodyFat: number) => {
+    if (!user || !todayLog) return;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    setIsLoading(true);
-    setError(null);
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const logValue = field === 'weight' && value !== null ? parseWeight(value.toString()) : value;
-      if (logValue === null && field === 'weight') {
-        throw new Error('Invalid weight value');
-      }
+      await updateLog(user.uid, todayLog.id, {
+        ...todayLog,
+        bodyFat,
+        updatedAt: new Date()
+      });
 
-      if (todayLog) {
-        // Update existing log
-        await updateLog(user.uid, todayLog.id, {
-          ...todayLog,
-          [field]: logValue,
-          updatedAt: new Date()
-        });
-      } else {
-        // Create new log
-        const newLog: Partial<DailyLog> = {
-          [field]: logValue,
-          date: new Date().toISOString(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        await addLog(user.uid, newLog);
-      }
+      await updateProfile(user.uid, {
+        bodyFat,
+        updatedAt: new Date()
+      });
 
-      // Update global weight state if this is a weight log
-      if (field === 'weight' && typeof logValue === 'number') {
-        updateCurrentWeight(logValue);
-      }
-      
-      setIsEditing(false);
-      setError(null);
-      onLogAdded?.();
+      setState(prev => ({
+        ...prev,
+        showBodyFatPrompt: false,
+        showBodyFatModal: false
+      }));
     } catch (err) {
-      setError('Failed to save log. Please try again.');
-      console.error('Error logging value:', err);
+      setState(prev => ({
+        ...prev,
+        error: 'Failed to save body fat. Please try again.'
+      }));
+      console.error('Error saving body fat:', err);
     } finally {
-      setIsLoading(false);
+      setState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
-    setValue(todayLog?.[field] ?? null);
-  };
+  const handleMacrosSubmit = async (macros: { proteins: number; fats: number; carbs: number; fiber: number }) => {
+    if (!user || !todayLog) return;
 
-  const handleCancel = () => {
-    setIsEditing(false);
-    setValue(todayLog?.[field] ?? null);
-  };
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    setValue(inputValue === '' ? null : Number(inputValue));
-  };
+    try {
+      await updateLog(user.uid, todayLog.id, {
+        ...todayLog,
+        macros,
+        updatedAt: new Date()
+      });
 
-  const formatDisplayValue = (val: number | null) => {
-    if (val === null) return '-';
-    if (field === 'weight') {
-      return formatWeight(val);
+      setState(prev => ({
+        ...prev,
+        showMacrosPrompt: false,
+        showMacrosModal: false
+      }));
+    } catch (err) {
+      setState(prev => ({
+        ...prev,
+        error: 'Failed to save macros. Please try again.'
+      }));
+      console.error('Error saving macros:', err);
+    } finally {
+      setState(prev => ({ ...prev, isLoading: false }));
     }
-    return val.toLocaleString();
   };
 
-  const inputStep = field === 'weight' ? WEIGHT_STEP : step;
+  const handleDistanceSubmit = async (distance: number) => {
+    if (!user || !todayLog) return;
+
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+    try {
+      await updateLog(user.uid, todayLog.id, {
+        ...todayLog,
+        distance,
+        updatedAt: new Date()
+      });
+
+      setState(prev => ({
+        ...prev,
+        showDistancePrompt: false,
+        showDistanceModal: false
+      }));
+    } catch (err) {
+      setState(prev => ({
+        ...prev,
+        error: 'Failed to save distance. Please try again.'
+      }));
+      console.error('Error saving distance:', err);
+    } finally {
+      setState(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const getPromptConfig = () => {
+    switch (field) {
+      case 'weight':
+        return { icon: Percent, title: 'Add Body Fat?' };
+      case 'calories':
+        return { icon: Beef, title: 'Add Macros?' };
+      case 'steps':
+        return { icon: Route, title: 'Add Distance?' };
+      default:
+        return { icon: Icon, title: '' };
+    }
+  };
 
   const hasLoggedToday = todayLog?.[field] !== undefined && todayLog[field] !== null;
+  const promptConfig = getPromptConfig();
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <div className="flex items-center space-x-3 mb-4">
-        <Icon className="h-6 w-6 text-indigo-600" />
-        <h3 className="text-sm font-medium text-gray-900">{label}</h3>
+    <>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 h-full flex flex-col relative overflow-hidden">
+        <div className="flex items-center gap-2 mb-3">
+          <Icon className="h-5 w-5 text-indigo-600" />
+          <h3 className="text-sm font-medium text-gray-900">{label}</h3>
+        </div>
+
+        <AnimatePresence>
+          {(state.showBodyFatPrompt || state.showMacrosPrompt || state.showDistancePrompt) && (
+            <AdditionalDataPrompt
+              icon={promptConfig.icon}
+              title={promptConfig.title}
+              onAdd={() => {
+                if (field === 'weight') {
+                  setState(prev => ({ ...prev, showBodyFatPrompt: false, showBodyFatModal: true }));
+                } else if (field === 'calories') {
+                  setState(prev => ({ ...prev, showMacrosPrompt: false, showMacrosModal: true }));
+                } else if (field === 'steps') {
+                  setState(prev => ({ ...prev, showDistancePrompt: false, showDistanceModal: true }));
+                }
+              }}
+              onSkip={() => {
+                setState(prev => ({
+                  ...prev,
+                  showBodyFatPrompt: false,
+                  showMacrosPrompt: false,
+                  showDistancePrompt: false
+                }));
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {hasLoggedToday && !state.isEditing ? (
+          <LogValue
+            log={todayLog}
+            field={field}
+            unit={unit}
+            onEdit={() => setState(prev => ({ ...prev, isEditing: true }))}
+          />
+        ) : (
+          <LogForm
+            value={state.value}
+            field={field}
+            unit={unit}
+            step={step}
+            min={min}
+            max={max}
+            isLoading={state.isLoading}
+            error={state.error}
+            isEditing={state.isEditing}
+            onChange={(value) => setState(prev => ({ ...prev, value }))}
+            onSubmit={handleSubmit}
+            onCancel={() => setState(prev => ({
+              ...prev,
+              isEditing: false,
+              value: todayLog?.[field] ?? null
+            }))}
+          />
+        )}
       </div>
 
-      {hasLoggedToday && !isEditing ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold text-gray-900">
-                {formatDisplayValue(todayLog[field] as number)} {unit}
-              </div>
-              <div className="text-sm text-gray-500 mt-1">
-                Logged at {formatDateTime(todayLog.updatedAt || todayLog.createdAt)}
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Check className="h-5 w-5 text-green-500" />
-            </div>
-          </div>
-          <button
-            onClick={handleEdit}
-            className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
-          >
-            <Edit2 className="h-4 w-4" />
-            <span>Update Today's {label}</span>
-          </button>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <input
-              type="number"
-              value={value ?? ''}
-              onChange={handleInputChange}
-              step={inputStep}
-              min={min}
-              max={max}
-              disabled={isLoading}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:opacity-50"
-            />
-            <span className="text-sm text-gray-500">{unit}</span>
-          </div>
-
-          {error && (
-            <div className="flex items-center space-x-2 text-red-600 text-sm">
-              <AlertCircle className="h-4 w-4" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="flex space-x-2">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Saving...' : isEditing ? 'Update' : 'Log'}
-            </button>
-            {isEditing && (
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-      )}
-    </div>
+      <AnimatePresence>
+        {state.showBodyFatModal && (
+          <BodyFatModal
+            isOpen={state.showBodyFatModal}
+            onClose={() => setState(prev => ({ ...prev, showBodyFatModal: false }))}
+            onSubmit={handleBodyFatSubmit}
+            isLoading={state.isLoading}
+          />
+        )}
+        {state.showMacrosModal && (
+          <MacrosModal
+            isOpen={state.showMacrosModal}
+            onClose={() => setState(prev => ({ ...prev, showMacrosModal: false }))}
+            onSubmit={handleMacrosSubmit}
+            isLoading={state.isLoading}
+          />
+        )}
+        {state.showDistanceModal && (
+          <DistanceModal
+            isOpen={state.showDistanceModal}
+            onClose={() => setState(prev => ({ ...prev, showDistanceModal: false }))}
+            onSubmit={handleDistanceSubmit}
+            isLoading={state.isLoading}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }

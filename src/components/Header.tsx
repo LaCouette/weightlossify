@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, LogOut, User, Menu, X, Calendar, Calculator, LineChart, Home } from 'lucide-react';
+import { Activity, LogOut, User, Menu, X, Calendar, Calculator, BarChart, Home, Camera } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 
@@ -11,17 +11,18 @@ export function Header() {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    navigate('/');
   };
 
   const isActive = (path: string) => location.pathname === path;
 
   const menuItems = [
-    { path: '/', label: 'Dashboard', icon: Home },
-    { path: '/overview', label: 'Overview', icon: LineChart },
-    { path: '/logs', label: 'Logs History', icon: Calendar },
-    { path: '/calculator', label: 'TDEE Calculator', icon: Calculator },
-    { path: '/profile', label: 'Profile', icon: User },
+    { path: '/app/dashboard', label: 'Dashboard', icon: Home },
+    { path: '/app/analytics', label: 'Analytics', icon: BarChart },
+    { path: '/app/bodyfat-scan', label: 'Body Fat Scan', icon: Camera },
+    { path: '/app/logs', label: 'Logs History', icon: Calendar },
+    { path: '/app/calculator', label: 'TDEE Calculator', icon: Calculator },
+    { path: '/app/profile', label: 'Profile', icon: User }
   ];
 
   return (
@@ -44,7 +45,7 @@ export function Header() {
           <div 
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center space-x-3 cursor-pointer"
             onClick={() => {
-              navigate('/');
+              navigate('/app/dashboard');
               setIsMenuOpen(false);
             }}
           >

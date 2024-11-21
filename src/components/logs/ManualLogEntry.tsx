@@ -3,6 +3,7 @@ import { Plus, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useLogsStore } from '../../stores/logsStore';
 import { useWeightStore } from '../../stores/weightStore';
+import { useUserStore } from '../../stores/userStore';
 import { formatWeight, parseWeight, validateWeight, WEIGHT_STEP } from '../../utils/weightFormatting';
 
 interface ManualLogEntryProps {
@@ -16,10 +17,12 @@ export function ManualLogEntry({ onComplete }: ManualLogEntryProps) {
   const { user } = useAuthStore();
   const { addLog } = useLogsStore();
   const updateCurrentWeight = useWeightStore(state => state.updateCurrentWeight);
+  const { updateProfile } = useUserStore();
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     weight: '',
+    bodyFat: '',
     calories: '',
     steps: ''
   });
@@ -41,6 +44,7 @@ export function ManualLogEntry({ onComplete }: ManualLogEntryProps) {
       const logData = {
         date: new Date(formData.date).toISOString(),
         weight: formData.weight ? parseWeight(formData.weight) : null,
+        bodyFat: formData.bodyFat ? Number(formData.bodyFat) : null,
         calories: formData.calories ? Number(formData.calories) : null,
         steps: formData.steps ? Number(formData.steps) : null,
         createdAt: new Date(),
@@ -48,7 +52,7 @@ export function ManualLogEntry({ onComplete }: ManualLogEntryProps) {
       };
 
       // Validate that at least one value is provided
-      if (!logData.weight && !logData.calories && !logData.steps) {
+      if (!logData.weight && !logData.bodyFat && !logData.calories && !logData.steps) {
         throw new Error('Please provide at least one value');
       }
 
@@ -59,10 +63,19 @@ export function ManualLogEntry({ onComplete }: ManualLogEntryProps) {
         updateCurrentWeight(logData.weight);
       }
 
+      // Update user profile body fat if provided
+      if (logData.bodyFat) {
+        await updateProfile(user.uid, {
+          bodyFat: logData.bodyFat,
+          updatedAt: new Date()
+        });
+      }
+
       // Reset form and close modal
       setFormData({
         date: new Date().toISOString().split('T')[0],
         weight: '',
+        bodyFat: '',
         calories: '',
         steps: ''
       });
@@ -134,6 +147,24 @@ export function ManualLogEntry({ onComplete }: ManualLogEntryProps) {
             min="30"
             max="300"
             placeholder="Enter weight"
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Body Fat Input */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Body Fat %
+          </label>
+          <input
+            type="number"
+            name="bodyFat"
+            value={formData.bodyFat}
+            onChange={handleChange}
+            step="0.1"
+            min="3"
+            max="50"
+            placeholder="Enter body fat percentage"
             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
